@@ -6,7 +6,7 @@
   const form = document.getElementById('quoteForm');
   const rows = document.getElementById('serviceRows');
   const status = document.getElementById('saveStatus');
-  const authPanel = document.getElementById('authPanel');
+  const suggestionsStatus = document.getElementById('suggestionsStatus');
   const authToggle = document.getElementById('authToggle');
   const printButton = document.getElementById('printQuote');
   const supabase = window.supabase?.createClient(
@@ -19,6 +19,7 @@
   let requestId = crypto.randomUUID();
   let issuedQuoteId = '';
   let signedInUser = null;
+  let serviceSuggestions = [];
 
   function localDate(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -44,7 +45,7 @@
       const draft = { ...makeDefaults(), ...saved };
       if (!draft.issuedQuoteId) draft.quoteNumber = '';
       draft.services = Array.isArray(saved.services) && saved.services.length
-        ? saved.services.map(item => ({ id: item.id || crypto.randomUUID(), name: String(item.name || ''), performer: String(item.performer || ''), duration: String(item.duration || ''), quantity: Number(item.quantity) || 1, price: item.price === 0 ? '0' : String(item.price || '') }))
+        ? saved.services.map(item => ({ id: item.id || crypto.randomUUID(), name: String(item.name || ''), performer: String(item.performer || ''), duration: String(item.duration || ''), quantity: item.quantity === '' ? '' : Number(item.quantity) || 1, price: item.price === 0 ? '0' : String(item.price || '') }))
         : makeDefaults().services;
       return draft;
     } catch {
@@ -98,10 +99,15 @@
 
   function renderPreview() {
     const data = readDraft();
+    const issued = Boolean(issuedQuoteId);
     setText('viewNumber', data.quoteNumber, 'مسودة');
     setText('viewIssueDate', displayDate(data.issueDate));
-    setText('viewClient', data.clientName, 'اسم العميل');
-    setText('viewTitle', data.quoteTitle, 'عنوان العرض');
+    setText('viewClient', data.clientName, issued ? '' : 'اسم العميل');
+    setText('viewTitle', data.quoteTitle, issued ? '' : 'عنوان العرض');
+    document.getElementById('viewClientSection').hidden = issued && !data.clientName && !data.contactName && !data.quoteTitle && !data.projectName;
+    document.getElementById('viewClientLabel').hidden = issued && !data.clientName;
+    document.getElementById('viewClient').hidden = issued && !data.clientName;
+    document.getElementById('viewProjectBlock').hidden = issued && !data.quoteTitle && !data.projectName;
     setText('viewCoordinator', data.coordinator, '');
     setText('viewPhone', data.phone, '');
     const contact = document.getElementById('viewContact');
@@ -114,16 +120,19 @@
     const body = document.getElementById('viewServices');
     body.replaceChildren();
     let total = 0;
-    for (const service of services) {
+    const visibleServices = issued
+      ? services.filter(service => service.name || service.performer || service.duration || service.price !== '')
+      : services;
+    for (const service of visibleServices) {
       const lineTotal = (Number(service.quantity) || 0) * (Number(service.price) || 0);
       total += lineTotal;
       const row = document.createElement('tr');
       const nameCell = document.createElement('td');
-      nameCell.appendChild(makeElement('span', 'paper-service-name', service.name || 'اسم الخدمة'));
+      nameCell.appendChild(makeElement('span', 'paper-service-name', service.name || (issued ? '' : 'اسم الخدمة')));
       if (service.performer) nameCell.appendChild(makeElement('span', 'paper-service-detail', `المنفذ: ${service.performer}`));
       row.appendChild(nameCell);
-      row.appendChild(makeElement('td', '', service.duration || '—'));
-      row.appendChild(makeElement('td', '', String(service.quantity || 1)));
+      row.appendChild(makeElement('td', '', service.duration || (issued ? '' : '—')));
+      row.appendChild(makeElement('td', '', service.quantity === '' ? (issued ? '' : '—') : String(service.quantity || 1)));
       row.appendChild(makeElement('td', '', formatAmount(lineTotal)));
       body.appendChild(row);
     }
@@ -150,10 +159,108 @@
     if (options.placeholder) input.placeholder = options.placeholder;
     if (options.min !== undefined) input.min = String(options.min);
     if (options.step !== undefined) input.step = String(options.step);
-    if (options.required) input.required = true;
     if (options.inputMode) input.inputMode = options.inputMode;
     label.appendChild(input);
     return label;
+  }
+
+  function renderSuggestionChoices(service, input, menu) {
+    const query = input.value.trim().toLocaleLowerCase('ar');
+    const matches = serviceSuggestions.filter(item => item.name.toLocaleLowerCase('ar').includes(query));
+    menu.replaceChildren();
+    for (const suggestion of matches) {
+      const item = makeElement('div', 'service-suggestion');
+      const choice = makeElement('button', 'service-suggestion__choice', suggestion.name);
+      choice.type = 'button';
+      choice.dir = 'auto';
+      choice.addEventListener('click', () => {
+        input.value = suggestion.name;
+        service.name = suggestion.name;
+        menu.hidden = true;
+        renderPreview();
+        saveDraft();
+        input.closest('.service-row')?.querySelector('[data-key="duration"]')?.focus();
+      });
+      const remove = makeElement('button', 'service-suggestion__remove', '×');
+      remove.type = 'button';
+      remove.setAttribute('aria-label', `حذف اقتراح ${suggestion.name}`);
+      remove.addEventListener('click', async () => {
+        remove.disabled = true;
+        const { data, error } = await supabase.from('quotation_service_suggestions')
+          .delete().eq('id', suggestion.id).select('id');
+        if (error || !data?.length) {
+          remove.disabled = false;
+          suggestionsStatus.textContent = 'تعذّر حذف الاقتراح. حاول مرة أخرى.';
+          return;
+        }
+        serviceSuggestions = serviceSuggestions.filter(item => item.id !== suggestion.id);
+        suggestionsStatus.textContent = `حُذف اقتراح ${suggestion.name}`;
+        input.focus();
+        renderSuggestionChoices(service, input, menu);
+      });
+      item.append(choice, remove);
+      menu.appendChild(item);
+    }
+    menu.hidden = matches.length === 0;
+  }
+
+  function makeServiceNameField(service) {
+    const field = makeElement('div', 'field service-name-field');
+    const id = `service-name-${service.id}`;
+    const label = makeElement('label', '', 'وصف الخدمة');
+    label.htmlFor = id;
+    const input = document.createElement('input');
+    input.id = id;
+    input.type = 'text';
+    input.value = service.name;
+    input.dataset.key = 'name';
+    input.className = 'service-name-input';
+    input.maxLength = 150;
+    input.autocomplete = 'off';
+    input.placeholder = 'مثال: تصوير وتغطية حدث';
+    const menu = makeElement('div', 'service-suggestions');
+    menu.setAttribute('role', 'group');
+    menu.setAttribute('aria-label', 'اقتراحات وصف الخدمة');
+    menu.hidden = true;
+    input.addEventListener('focus', () => renderSuggestionChoices(service, input, menu));
+    input.addEventListener('input', () => renderSuggestionChoices(service, input, menu));
+    field.addEventListener('focusout', event => {
+      if (!field.contains(event.relatedTarget)) menu.hidden = true;
+    });
+    field.append(label, input, menu);
+    return field;
+  }
+
+  async function loadServiceSuggestions() {
+    if (!supabase || !signedInUser) {
+      serviceSuggestions = [];
+      suggestionsStatus.textContent = '';
+      return;
+    }
+    const userId = signedInUser.id;
+    const loaded = [];
+    const pageSize = 1000;
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabase.from('quotation_service_suggestions')
+        .select('id,name').order('last_used_at', { ascending: false })
+        .order('id', { ascending: true }).range(from, from + pageSize - 1);
+      if (signedInUser?.id !== userId) return;
+      if (error) {
+        serviceSuggestions = [];
+        suggestionsStatus.textContent = 'تعذّر تحميل اقتراحات الخدمات. أعد تحميل الصفحة.';
+        return;
+      }
+      loaded.push(...(data || []));
+      if (!data || data.length < pageSize) break;
+    }
+    serviceSuggestions = loaded;
+    suggestionsStatus.textContent = '';
+    const focused = rows.querySelector('.service-name-input:focus');
+    if (focused) renderSuggestionChoices(
+      services.find(service => `service-name-${service.id}` === focused.id),
+      focused,
+      focused.parentElement.querySelector('.service-suggestions')
+    );
   }
 
   function renderRows() {
@@ -174,10 +281,10 @@
       top.appendChild(remove);
       card.appendChild(top);
       const fields = makeElement('div', 'service-row__fields');
-      fields.appendChild(makeField('وصف الخدمة *', 'name', service.name, { required: true, placeholder: 'مثال: تصوير وتغطية حدث' }));
+      fields.appendChild(makeServiceNameField(service));
       fields.appendChild(makeField('المدة', 'duration', service.duration, { placeholder: 'مثال: ٤ ساعات' }));
-      fields.appendChild(makeField('الكمية *', 'quantity', service.quantity, { type: 'number', min: 1, step: 1, required: true, inputMode: 'numeric' }));
-      fields.appendChild(makeField('سعر الوحدة *', 'price', service.price, { type: 'number', min: 0.01, step: 0.01, required: true, inputMode: 'decimal' }));
+      fields.appendChild(makeField('الكمية', 'quantity', service.quantity, { type: 'number', min: 1, step: 1, inputMode: 'numeric' }));
+      fields.appendChild(makeField('سعر الوحدة', 'price', service.price, { type: 'number', min: 0, step: 0.01, inputMode: 'decimal' }));
       card.appendChild(fields);
       const extra = makeElement('div', 'service-row__extra');
       extra.appendChild(makeField('اسم المنفذ أو المودل (اختياري)', 'performer', service.performer));
@@ -197,13 +304,12 @@
   }
 
   function validate() {
-    const required = [...form.querySelectorAll('[required]')];
-    for (const input of required) {
-      if (!input.checkValidity()) {
+    for (const input of form.querySelectorAll('input:not([readonly])')) {
+      if (input.value && !input.checkValidity()) {
         input.setAttribute('aria-invalid', 'true');
         input.reportValidity();
         input.focus();
-        status.textContent = 'أكمل الحقول المطلوبة قبل التصدير';
+        status.textContent = 'تحقق من صحة القيمة التي أدخلتها.';
         return false;
       }
     }
@@ -223,6 +329,7 @@
     const issued = Boolean(issuedQuoteId);
     for (const element of form.querySelectorAll('input:not(#quoteNumber), textarea')) element.disabled = issued;
     for (const button of rows.querySelectorAll('button')) button.disabled = issued;
+    for (const menu of rows.querySelectorAll('.service-suggestions')) menu.hidden = true;
     document.getElementById('addService').disabled = issued;
     printButton.textContent = issued ? 'إعادة تصدير PDF' : 'إصدار وتصدير PDF';
     if (issued) status.textContent = `اعتمد العرض ${document.getElementById('quoteNumber').value}`;
@@ -237,15 +344,25 @@
     const { data, error } = await supabase.auth.getUser();
     signedInUser = error ? null : data.user;
     authToggle.textContent = signedInUser ? 'تسجيل الخروج' : 'تسجيل الدخول';
-    if (signedInUser) {
-      authPanel.hidden = true;
-      document.getElementById('authStatus').textContent = '';
-    }
+    await loadServiceSuggestions();
   }
 
-  function openAuthPanel() {
-    authPanel.hidden = false;
-    document.getElementById('signInGoogle').focus();
+  async function startGoogleSignIn() {
+    if (!supabase) {
+      status.textContent = 'تعذّر تحميل تسجيل الدخول. أعد تحميل الصفحة.';
+      return;
+    }
+    authToggle.disabled = true;
+    authToggle.textContent = 'جارٍ الانتقال إلى Google…';
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'https://bannay-clients.github.io/bannay-quotation/' }
+    });
+    if (error) {
+      authToggle.disabled = false;
+      authToggle.textContent = 'تسجيل الدخول';
+      status.textContent = 'تعذّر بدء الدخول عبر Google. حاول مرة أخرى.';
+    }
   }
 
   function printIssuedQuote() {
@@ -271,24 +388,7 @@
       if (error) status.textContent = 'تعذّر تسجيل الخروج؛ حاول مرة أخرى';
       await refreshAuth();
     } else {
-      authPanel.hidden ? openAuthPanel() : (authPanel.hidden = true);
-    }
-  });
-  document.getElementById('signInGoogle').addEventListener('click', async () => {
-    if (!supabase) {
-      document.getElementById('authStatus').textContent = 'تعذّر تحميل تسجيل الدخول. أعد تحميل الصفحة.';
-      return;
-    }
-    const signInButton = document.getElementById('signInGoogle');
-    signInButton.disabled = true;
-    document.getElementById('authStatus').textContent = 'جارٍ الانتقال إلى Google…';
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: 'https://bannay-clients.github.io/bannay-quotation/' }
-    });
-    if (error) {
-      signInButton.disabled = false;
-      document.getElementById('authStatus').textContent = 'تعذّر بدء الدخول عبر Google. حاول مرة أخرى.';
+      await startGoogleSignIn();
     }
   });
   printButton.addEventListener('click', async () => {
@@ -297,6 +397,8 @@
       return;
     }
     if (!validate()) return;
+    const issueDate = document.getElementById('issueDate');
+    if (!issueDate.value) issueDate.value = localDate(new Date());
     clearTimeout(saveTimer);
     persistDraft();
     if (!supabase) {
@@ -306,8 +408,8 @@
     const { data: authData, error: authError } = await supabase.auth.getUser();
     signedInUser = authError ? null : authData.user;
     if (!signedInUser) {
-      status.textContent = 'سجّل الدخول أولًا لإصدار رقم العرض.';
-      openAuthPanel();
+      status.textContent = 'سجّل الدخول عبر Google، ثم اضغط إصدار مرة أخرى.';
+      await startGoogleSignIn();
       return;
     }
     printButton.disabled = true;
@@ -331,6 +433,7 @@
     applyIssuedState();
     persistDraft();
     status.textContent = `اعتمد العرض ${data[0].quotation_number}`;
+    loadServiceSuggestions();
     printIssuedQuote();
   });
   document.getElementById('newQuote').addEventListener('click', () => {
