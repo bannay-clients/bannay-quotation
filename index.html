@@ -34,15 +34,11 @@
           <p>عبّئ البيانات وشاهد النتيجة مباشرة. يُعتمد رقم متسلسل موحّد عند الإصدار، وتُحفظ المسودة على هذا الجهاز.</p>
         </div>
 
-        <form id="authPanel" class="auth-panel" hidden>
-          <h2>دخول مسؤول بنّاي</h2>
-          <p>استخدم حسابك في نظام عروض بنّاي لاعتماد رقم العرض من أي جهاز.</p>
-          <div class="field-grid field-grid--two">
-            <label class="field"><span>البريد الإلكتروني</span><input id="authEmail" type="email" autocomplete="username" required /></label>
-            <label class="field"><span>كلمة المرور</span><input id="authPassword" type="password" autocomplete="current-password" required /></label>
-          </div>
-          <div class="auth-panel__actions"><button id="signIn" class="button button--outline" type="submit">دخول</button><span id="authStatus" role="status" aria-live="polite"></span></div>
-        </form>
+        <section id="authPanel" class="auth-panel" aria-labelledby="authTitle" hidden>
+          <h2 id="authTitle">دخول مسؤول بنّاي</h2>
+          <p>سجّل الدخول بحساب Google المصرّح له لإصدار عروض الأسعار برقم موحّد من أي جهاز.</p>
+          <div class="auth-panel__actions"><button id="signInGoogle" class="button button--outline" type="button">المتابعة باستخدام Google</button><span id="authStatus" role="status" aria-live="polite"></span></div>
+        </section>
 
         <form id="quoteForm" novalidate>
           <section class="form-section" aria-labelledby="basicsTitle">

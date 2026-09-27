@@ -237,12 +237,15 @@
     const { data, error } = await supabase.auth.getUser();
     signedInUser = error ? null : data.user;
     authToggle.textContent = signedInUser ? 'تسجيل الخروج' : 'تسجيل الدخول';
-    if (signedInUser) authPanel.hidden = true;
+    if (signedInUser) {
+      authPanel.hidden = true;
+      document.getElementById('authStatus').textContent = '';
+    }
   }
 
   function openAuthPanel() {
     authPanel.hidden = false;
-    document.getElementById('authEmail').focus();
+    document.getElementById('signInGoogle').focus();
   }
 
   function printIssuedQuote() {
@@ -271,21 +274,21 @@
       authPanel.hidden ? openAuthPanel() : (authPanel.hidden = true);
     }
   });
-  authPanel.addEventListener('submit', async event => {
-    event.preventDefault();
-    if (!supabase || !authPanel.reportValidity()) return;
-    const email = document.getElementById('authEmail').value.trim();
-    const password = document.getElementById('authPassword').value;
-    const signInButton = document.getElementById('signIn');
+  document.getElementById('signInGoogle').addEventListener('click', async () => {
+    if (!supabase) {
+      document.getElementById('authStatus').textContent = 'تعذّر تحميل تسجيل الدخول. أعد تحميل الصفحة.';
+      return;
+    }
+    const signInButton = document.getElementById('signInGoogle');
     signInButton.disabled = true;
-    document.getElementById('authStatus').textContent = 'جارٍ تسجيل الدخول…';
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    document.getElementById('authPassword').value = '';
-    signInButton.disabled = false;
-    document.getElementById('authStatus').textContent = error ? 'بيانات الدخول غير صحيحة.' : '';
-    if (!error) {
-      await refreshAuth();
-      status.textContent = 'تم الدخول. يمكنك إصدار العرض الآن.';
+    document.getElementById('authStatus').textContent = 'جارٍ الانتقال إلى Google…';
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'https://bannay-clients.github.io/bannay-quotation/' }
+    });
+    if (error) {
+      signInButton.disabled = false;
+      document.getElementById('authStatus').textContent = 'تعذّر بدء الدخول عبر Google. حاول مرة أخرى.';
     }
   });
   printButton.addEventListener('click', async () => {
