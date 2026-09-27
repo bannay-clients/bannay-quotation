@@ -7,6 +7,7 @@
     <title>منشئ عروض الأسعار | Bannay Solutions Establishment</title>
     <link rel="icon" type="image/png" href="assets/brand/bannay-favicon.png" />
     <link rel="stylesheet" href="quotation.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js" defer></script>
     <script src="quotation.js" defer></script>
   </head>
   <body>
@@ -20,8 +21,9 @@
       </div>
       <div class="header-actions">
         <span id="saveStatus" class="save-status" role="status" aria-live="polite"></span>
+        <button id="authToggle" class="button button--ghost" type="button">تسجيل الدخول</button>
         <button id="newQuote" class="button button--ghost" type="button">عرض جديد</button>
-        <button id="printQuote" class="button button--primary" type="button">تصدير PDF</button>
+        <button id="printQuote" class="button button--primary" type="button">إصدار وتصدير PDF</button>
       </div>
     </header>
 
@@ -29,16 +31,25 @@
       <section class="editor" aria-labelledby="editorTitle">
         <div class="editor-intro">
           <h1 id="editorTitle">إنشاء عرض سعر</h1>
-          <p>عبّئ البيانات وشاهد النتيجة مباشرة. تُحفظ المسودة على هذا الجهاز فقط.</p>
+          <p>عبّئ البيانات وشاهد النتيجة مباشرة. يُعتمد رقم متسلسل موحّد عند الإصدار، وتُحفظ المسودة على هذا الجهاز.</p>
         </div>
+
+        <form id="authPanel" class="auth-panel" hidden>
+          <h2>دخول مسؤول بنّاي</h2>
+          <p>استخدم حسابك في نظام عروض بنّاي لاعتماد رقم العرض من أي جهاز.</p>
+          <div class="field-grid field-grid--two">
+            <label class="field"><span>البريد الإلكتروني</span><input id="authEmail" type="email" autocomplete="username" required /></label>
+            <label class="field"><span>كلمة المرور</span><input id="authPassword" type="password" autocomplete="current-password" required /></label>
+          </div>
+          <div class="auth-panel__actions"><button id="signIn" class="button button--outline" type="submit">دخول</button><span id="authStatus" role="status" aria-live="polite"></span></div>
+        </form>
 
         <form id="quoteForm" novalidate>
           <section class="form-section" aria-labelledby="basicsTitle">
             <div class="section-heading"><span>01</span><h2 id="basicsTitle">بيانات العرض</h2></div>
-            <div class="field-grid field-grid--three">
-              <label class="field"><span>رقم العرض <b aria-hidden="true">*</b></span><input id="quoteNumber" name="quoteNumber" required maxlength="40" autocomplete="off" dir="ltr" /></label>
+            <div class="field-grid field-grid--two">
+              <label class="field"><span>رقم العرض</span><input id="quoteNumber" name="quoteNumber" readonly placeholder="يُنشأ تلقائيًا عند الإصدار" dir="ltr" /><small>يُحفظ الرقم نفسه عند إعادة التصدير.</small></label>
               <label class="field"><span>تاريخ الإصدار <b aria-hidden="true">*</b></span><input id="issueDate" name="issueDate" type="date" required /></label>
-              <label class="field"><span>صالح حتى <b aria-hidden="true">*</b></span><input id="validUntil" name="validUntil" type="date" required /></label>
             </div>
             <div class="field-grid field-grid--two">
               <label class="field"><span>عنوان العرض <b aria-hidden="true">*</b></span><input id="quoteTitle" name="quoteTitle" required maxlength="100" placeholder="مثال: تصوير وتغطية فعالية" /></label>
@@ -96,7 +107,6 @@
             <div class="paper-meta">
               <div><span>رقم العرض</span><strong id="viewNumber" dir="ltr"></strong></div>
               <div><span>تاريخ الإصدار</span><strong id="viewIssueDate" dir="ltr"></strong></div>
-              <div><span>صالح حتى</span><strong id="viewValidUntil" dir="ltr"></strong></div>
             </div>
 
             <section class="paper-client">

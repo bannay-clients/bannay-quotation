@@ -2,13 +2,23 @@
   'use strict';
 
   const STORAGE_KEY = 'bannay-quotation-draft-v1';
-  const fieldIds = ['quoteNumber', 'issueDate', 'validUntil', 'quoteTitle', 'projectName', 'clientName', 'contactName', 'scopeNotes', 'terms', 'taxNote', 'coordinator', 'phone'];
+  const fieldIds = ['quoteNumber', 'issueDate', 'quoteTitle', 'projectName', 'clientName', 'contactName', 'scopeNotes', 'terms', 'taxNote', 'coordinator', 'phone'];
   const form = document.getElementById('quoteForm');
   const rows = document.getElementById('serviceRows');
   const status = document.getElementById('saveStatus');
+  const authPanel = document.getElementById('authPanel');
+  const authToggle = document.getElementById('authToggle');
+  const printButton = document.getElementById('printQuote');
+  const supabase = window.supabase?.createClient(
+    'https://pufuhhqfbqqzskancrrp.supabase.co',
+    'sb_publishable_zVYTPXVsNWyqE8zfO8CYig_Vn2ZQfc6'
+  );
   const money = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
   let services = [];
   let saveTimer;
+  let requestId = crypto.randomUUID();
+  let issuedQuoteId = '';
+  let signedInUser = null;
 
   function localDate(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -16,10 +26,8 @@
 
   function makeDefaults() {
     const now = new Date();
-    const until = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 14);
-    const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
     return {
-      quoteNumber: `Q-${stamp}`, issueDate: localDate(now), validUntil: localDate(until),
+      quoteNumber: '', issueDate: localDate(now), requestId: crypto.randomUUID(), issuedQuoteId: '',
       quoteTitle: '', projectName: '', clientName: '', contactName: '', scopeNotes: '', terms: '',
       taxNote: 'المؤسسة غير مسجلة حاليًا في ضريبة القيمة المضافة؛ لذا لا تُضاف ضريبة القيمة المضافة إلى قيمة هذا العرض.',
       coordinator: 'أنس عمر', phone: '0599599527',
@@ -34,6 +42,7 @@
       const saved = JSON.parse(raw);
       if (!saved || typeof saved !== 'object') return makeDefaults();
       const draft = { ...makeDefaults(), ...saved };
+      if (!draft.issuedQuoteId) draft.quoteNumber = '';
       draft.services = Array.isArray(saved.services) && saved.services.length
         ? saved.services.map(item => ({ id: item.id || crypto.randomUUID(), name: String(item.name || ''), performer: String(item.performer || ''), duration: String(item.duration || ''), quantity: Number(item.quantity) || 1, price: item.price === 0 ? '0' : String(item.price || '') }))
         : makeDefaults().services;
@@ -47,19 +56,23 @@
     const draft = {};
     for (const id of fieldIds) draft[id] = document.getElementById(id).value.trim();
     draft.services = services.map(({ id, name, performer, duration, quantity, price }) => ({ id, name, performer, duration, quantity, price }));
+    draft.requestId = requestId;
+    draft.issuedQuoteId = issuedQuoteId;
     return draft;
+  }
+
+  function persistDraft() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(readDraft()));
+      status.textContent = 'حُفظت المسودة على هذا الجهاز';
+    } catch {
+      status.textContent = 'تعذّر حفظ المسودة على هذا الجهاز';
+    }
   }
 
   function saveDraft() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(readDraft()));
-        status.textContent = 'حُفظت المسودة على هذا الجهاز';
-      } catch {
-        status.textContent = 'تعذّر حفظ المسودة على هذا الجهاز';
-      }
-    }, 250);
+    saveTimer = setTimeout(persistDraft, 250);
   }
 
   function setText(id, value, fallback = '—') {
@@ -85,9 +98,8 @@
 
   function renderPreview() {
     const data = readDraft();
-    setText('viewNumber', data.quoteNumber);
+    setText('viewNumber', data.quoteNumber, 'مسودة');
     setText('viewIssueDate', displayDate(data.issueDate));
-    setText('viewValidUntil', displayDate(data.validUntil));
     setText('viewClient', data.clientName, 'اسم العميل');
     setText('viewTitle', data.quoteTitle, 'عنوان العرض');
     setText('viewCoordinator', data.coordinator, '');
@@ -185,7 +197,6 @@
   }
 
   function validate() {
-    document.getElementById('validUntil').setCustomValidity('');
     const required = [...form.querySelectorAll('[required]')];
     for (const input of required) {
       if (!input.checkValidity()) {
@@ -196,29 +207,53 @@
         return false;
       }
     }
-    const issue = document.getElementById('issueDate');
-    const until = document.getElementById('validUntil');
-    if (until.value < issue.value) {
-      until.setCustomValidity('تاريخ الصلاحية يجب أن يساوي تاريخ الإصدار أو يأتي بعده');
-      until.reportValidity();
-      until.focus();
-      status.textContent = 'راجع تاريخ صلاحية العرض';
-      return false;
-    }
-    until.setCustomValidity('');
     return true;
   }
 
   function loadDraft(data) {
     for (const id of fieldIds) document.getElementById(id).value = data[id] || '';
+    requestId = data.requestId || crypto.randomUUID();
+    issuedQuoteId = data.issuedQuoteId || '';
     services = data.services;
     renderRows(); renderPreview();
+    applyIssuedState();
+  }
+
+  function applyIssuedState() {
+    const issued = Boolean(issuedQuoteId);
+    for (const element of form.querySelectorAll('input:not(#quoteNumber), textarea')) element.disabled = issued;
+    for (const button of rows.querySelectorAll('button')) button.disabled = issued;
+    document.getElementById('addService').disabled = issued;
+    printButton.textContent = issued ? 'إعادة تصدير PDF' : 'إصدار وتصدير PDF';
+    if (issued) status.textContent = `اعتمد العرض ${document.getElementById('quoteNumber').value}`;
+  }
+
+  async function refreshAuth() {
+    if (!supabase) {
+      authToggle.textContent = 'تعذّر تحميل تسجيل الدخول';
+      authToggle.disabled = true;
+      return;
+    }
+    const { data, error } = await supabase.auth.getUser();
+    signedInUser = error ? null : data.user;
+    authToggle.textContent = signedInUser ? 'تسجيل الخروج' : 'تسجيل الدخول';
+    if (signedInUser) authPanel.hidden = true;
+  }
+
+  function openAuthPanel() {
+    authPanel.hidden = false;
+    document.getElementById('authEmail').focus();
+  }
+
+  function printIssuedQuote() {
+    const number = document.getElementById('quoteNumber').value.trim();
+    document.title = `عرض سعر ${number} - Bannay Solutions Establishment`;
+    window.print();
   }
 
   form.addEventListener('input', event => {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
       event.target.removeAttribute('aria-invalid');
-      if (event.target.id === 'validUntil') event.target.setCustomValidity('');
     }
     renderPreview(); saveDraft();
   });
@@ -227,19 +262,82 @@
     renderRows(); renderPreview(); saveDraft();
     rows.lastElementChild?.querySelector('input')?.focus();
   });
-  document.getElementById('printQuote').addEventListener('click', () => {
+  authToggle.addEventListener('click', async () => {
+    if (signedInUser && supabase) {
+      const { error } = await supabase.auth.signOut();
+      if (error) status.textContent = 'تعذّر تسجيل الخروج؛ حاول مرة أخرى';
+      await refreshAuth();
+    } else {
+      authPanel.hidden ? openAuthPanel() : (authPanel.hidden = true);
+    }
+  });
+  authPanel.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!supabase || !authPanel.reportValidity()) return;
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const signInButton = document.getElementById('signIn');
+    signInButton.disabled = true;
+    document.getElementById('authStatus').textContent = 'جارٍ تسجيل الدخول…';
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    document.getElementById('authPassword').value = '';
+    signInButton.disabled = false;
+    document.getElementById('authStatus').textContent = error ? 'بيانات الدخول غير صحيحة.' : '';
+    if (!error) {
+      await refreshAuth();
+      status.textContent = 'تم الدخول. يمكنك إصدار العرض الآن.';
+    }
+  });
+  printButton.addEventListener('click', async () => {
+    if (issuedQuoteId) {
+      printIssuedQuote();
+      return;
+    }
     if (!validate()) return;
+    clearTimeout(saveTimer);
+    persistDraft();
+    if (!supabase) {
+      status.textContent = 'تعذّر تحميل خدمة الترقيم؛ أعد تحميل الصفحة.';
+      return;
+    }
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    signedInUser = authError ? null : authData.user;
+    if (!signedInUser) {
+      status.textContent = 'سجّل الدخول أولًا لإصدار رقم العرض.';
+      openAuthPanel();
+      return;
+    }
+    printButton.disabled = true;
+    status.textContent = 'جارٍ اعتماد رقم العرض…';
+    const draft = readDraft();
+    const { data, error } = await supabase.rpc('issue_quotation', {
+      p_request_id: requestId,
+      p_issue_date: draft.issueDate,
+      p_snapshot: draft
+    });
+    printButton.disabled = false;
+    if (error || !data?.[0]) {
+      status.textContent = error?.code === '42501'
+        ? 'حسابك غير مخوّل لإصدار العروض.'
+        : 'تعذّر اعتماد العرض. حاول مرة أخرى؛ لن يُستهلك رقم إضافي عند إعادة المحاولة.';
+      return;
+    }
+    issuedQuoteId = data[0].quotation_id;
+    document.getElementById('quoteNumber').value = data[0].quotation_number;
     renderPreview();
-    document.title = `عرض سعر ${document.getElementById('quoteNumber').value.trim()} - Bannay Solutions Establishment`;
-    window.print();
+    applyIssuedState();
+    persistDraft();
+    status.textContent = `اعتمد العرض ${data[0].quotation_number}`;
+    printIssuedQuote();
   });
   document.getElementById('newQuote').addEventListener('click', () => {
     if (!window.confirm('إنشاء عرض جديد سيستبدل المسودة المحفوظة على هذا الجهاز. هل تريد المتابعة؟')) return;
     const fresh = makeDefaults();
     loadDraft(fresh);
-    saveDraft();
+    persistDraft();
     document.getElementById('clientName').focus();
   });
 
   loadDraft(getDraft());
+  refreshAuth();
 })();

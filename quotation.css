@@ -1,7 +1,11 @@
 @font-face{font-family:'Noto Sans Arabic';src:url('assets/fonts/NotoSansArabic-variable.ttf') format('truetype');font-style:normal;font-weight:100 900;font-display:swap}
+@font-face{font-family:'Thmanyah Sans Local';src:local('thmanyahsans-Regular'),local('thmanyah Sans Regular');font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:'Thmanyah Sans Local';src:local('thmanyahsans-Medium'),local('thmanyah Sans Medium');font-style:normal;font-weight:500;font-display:swap}
+@font-face{font-family:'Thmanyah Sans Local';src:local('thmanyahsans-Bold'),local('thmanyah Sans Bold');font-style:normal;font-weight:700;font-display:swap}
+@font-face{font-family:'Thmanyah Sans Local';src:local('thmanyahsans-Black'),local('thmanyah Sans Black');font-style:normal;font-weight:900;font-display:swap}
 :root{--ink:#2c2026;--muted:#6d6268;--teal:#40202f;--teal-dark:#301722;--teal-soft:#f2e9ed;--canvas:#f7f4f5;--line:#e5dce0;--white:#fff;--focus:#754258}
 *{box-sizing:border-box}
-html{font-family:'Noto Sans Arabic',Arial,sans-serif;color:var(--ink);background:var(--canvas)}
+html{font-family:'Thmanyah Sans Local','Noto Sans Arabic',Arial,sans-serif;color:var(--ink);background:var(--canvas)}
 body{margin:0;min-width:0}
 button,input,textarea{font:inherit}
 button{cursor:pointer}
@@ -27,6 +31,14 @@ button{cursor:pointer}
 .editor-intro{margin-bottom:24px}
 .editor-intro h1{margin:0 0 7px;font-size:28px;line-height:1.35;letter-spacing:-.5px}
 .editor-intro p{margin:0;color:var(--muted);font-size:14px;line-height:1.7}
+.auth-panel{padding:19px 21px;margin-bottom:16px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 5px 20px #40202f10}
+.auth-panel h2{margin:0;font-size:18px}
+.auth-panel p{margin:5px 0 14px;color:var(--muted);font-size:13px;line-height:1.6}
+.auth-panel__actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.auth-panel__actions .button{margin-top:12px}
+#authStatus{font-size:13px;color:#944040}
+.field input[readonly]{background:#f5f0f2;color:var(--teal);font-weight:700}
+.field input:disabled,.field textarea:disabled,.service-row input:disabled{background:#f7f4f5;color:var(--ink);opacity:1}
 .form-section{padding:22px 24px 24px;margin-bottom:16px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 5px 20px #40202f10}
 .section-heading{display:flex;align-items:center;gap:10px;margin-bottom:20px}
 .section-heading>span{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--teal-soft);color:var(--teal);font-family:Arial,sans-serif;font-size:12px;font-weight:700}
