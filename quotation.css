@@ -31,12 +31,6 @@ button{cursor:pointer}
 .editor-intro{margin-bottom:24px}
 .editor-intro h1{margin:0 0 7px;font-size:28px;line-height:1.35;letter-spacing:-.5px}
 .editor-intro p{margin:0;color:var(--muted);font-size:14px;line-height:1.7}
-.auth-panel{padding:19px 21px;margin-bottom:16px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 5px 20px #40202f10}
-.auth-panel h2{margin:0;font-size:18px}
-.auth-panel p{margin:5px 0 14px;color:var(--muted);font-size:13px;line-height:1.6}
-.auth-panel__actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.auth-panel__actions .button{margin-top:12px}
-#authStatus{font-size:13px;color:#944040}
 .field input[readonly]{background:#f5f0f2;color:var(--teal);font-weight:700}
 .field input:disabled,.field textarea:disabled,.service-row input:disabled{background:#f7f4f5;color:var(--ink);opacity:1}
 .form-section{padding:22px 24px 24px;margin-bottom:16px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 5px 20px #40202f10}
@@ -50,7 +44,6 @@ button{cursor:pointer}
 .field{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:13px;font-weight:700;color:#50434a}
 .field--tax{margin-top:15px}
 .field small{font-size:12px;font-weight:400;line-height:1.5;color:var(--muted)}
-.field b{color:#b23b3b}
 .field input,.field textarea,.service-row input{display:block;width:100%;min-width:0;border:1px solid #d8cdd2;border-radius:7px;background:#fff;color:var(--ink);padding:10px 11px;font-size:14px;font-weight:400;line-height:1.45;outline:none;transition:border-color .15s,box-shadow .15s}
 .field input{min-height:43px}
 .field textarea{resize:vertical;min-height:83px}
@@ -60,6 +53,7 @@ button{cursor:pointer}
 input[type="date"]{direction:ltr;text-align:right}
 .service-rows{display:flex;flex-direction:column;gap:12px}
 .service-row{position:relative;border:1px solid var(--line);border-radius:9px;padding:16px;background:#fdfbfc}
+.service-row:focus-within{z-index:5}
 .service-row__top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:13px}
 .service-row__top strong{font-size:13px;color:var(--teal)}
 .icon-button{min-width:36px;min-height:36px;border:0;border-radius:7px;background:transparent;color:#9d4c4c;font-size:13px;font-weight:700}
@@ -68,6 +62,17 @@ input[type="date"]{direction:ltr;text-align:right}
 .service-row__extra{margin-top:12px}
 .service-row .field{font-size:12px}
 .service-row input{min-height:40px;padding:9px}
+.service-name-field{position:relative}
+.service-suggestions{position:absolute;z-index:10;inset-inline:0;top:calc(100% + 5px);max-height:240px;overflow:auto;padding:5px;background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 12px 24px #40202f26}
+.service-suggestion{display:flex;align-items:stretch;gap:4px;border-radius:6px}
+.service-suggestion+.service-suggestion{border-top:1px solid var(--line)}
+.service-suggestion:hover{background:var(--teal-soft)}
+.service-suggestion button{min-height:44px;border:0;background:transparent;color:var(--ink)}
+.service-suggestion__choice{flex:1;min-width:0;padding:8px 10px;text-align:start;font-size:13px;overflow-wrap:anywhere}
+.service-suggestion__remove{flex:none;min-width:44px;padding:8px;color:#9d3535!important;font-family:Arial,sans-serif;font-size:22px;font-weight:700}
+.service-suggestion__remove:hover{background:#fbebeb;border-radius:6px}
+.suggestion-hint,.suggestions-status{margin:10px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
+.suggestions-status:empty{display:none}
 .service-row__subtotal{text-align:left;color:var(--teal);font-size:13px;font-weight:700;margin-top:11px}
 .editor-footnote{color:var(--muted);font-size:12px;line-height:1.8;margin:6px 3px}
 .preview-panel{position:sticky;top:20px;min-width:0;background:#eee8eb;border:1px solid #ddcfd5;border-radius:13px;padding:17px;box-shadow:0 12px 32px #40202f13}

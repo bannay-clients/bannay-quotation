@@ -34,21 +34,15 @@
           <p>عبّئ البيانات وشاهد النتيجة مباشرة. يُعتمد رقم متسلسل موحّد عند الإصدار، وتُحفظ المسودة على هذا الجهاز.</p>
         </div>
 
-        <section id="authPanel" class="auth-panel" aria-labelledby="authTitle" hidden>
-          <h2 id="authTitle">دخول مسؤول بنّاي</h2>
-          <p>سجّل الدخول بحساب Google المصرّح له لإصدار عروض الأسعار برقم موحّد من أي جهاز.</p>
-          <div class="auth-panel__actions"><button id="signInGoogle" class="button button--outline" type="button">المتابعة باستخدام Google</button><span id="authStatus" role="status" aria-live="polite"></span></div>
-        </section>
-
         <form id="quoteForm" novalidate>
           <section class="form-section" aria-labelledby="basicsTitle">
             <div class="section-heading"><span>01</span><h2 id="basicsTitle">بيانات العرض</h2></div>
             <div class="field-grid field-grid--two">
               <label class="field"><span>رقم العرض</span><input id="quoteNumber" name="quoteNumber" readonly placeholder="يُنشأ تلقائيًا عند الإصدار" dir="ltr" /><small>يُحفظ الرقم نفسه عند إعادة التصدير.</small></label>
-              <label class="field"><span>تاريخ الإصدار <b aria-hidden="true">*</b></span><input id="issueDate" name="issueDate" type="date" required /></label>
+              <label class="field"><span>تاريخ الإصدار</span><input id="issueDate" name="issueDate" type="date" /></label>
             </div>
             <div class="field-grid field-grid--two">
-              <label class="field"><span>عنوان العرض <b aria-hidden="true">*</b></span><input id="quoteTitle" name="quoteTitle" required maxlength="100" placeholder="مثال: تصوير وتغطية فعالية" /></label>
+              <label class="field"><span>عنوان العرض</span><input id="quoteTitle" name="quoteTitle" maxlength="100" placeholder="مثال: تصوير وتغطية فعالية" /></label>
               <label class="field"><span>اسم المشروع أو الفعالية</span><input id="projectName" name="projectName" maxlength="120" placeholder="اختياري" /></label>
             </div>
           </section>
@@ -56,7 +50,7 @@
           <section class="form-section" aria-labelledby="clientTitle">
             <div class="section-heading"><span>02</span><h2 id="clientTitle">بيانات العميل</h2></div>
             <div class="field-grid field-grid--two">
-              <label class="field"><span>اسم العميل أو الجهة <b aria-hidden="true">*</b></span><input id="clientName" name="clientName" required maxlength="150" placeholder="الاسم الذي سيظهر في العرض" /></label>
+              <label class="field"><span>اسم العميل أو الجهة</span><input id="clientName" name="clientName" maxlength="150" placeholder="الاسم الذي سيظهر في العرض" /></label>
               <label class="field"><span>اسم جهة الاتصال</span><input id="contactName" name="contactName" maxlength="100" placeholder="اختياري" /></label>
             </div>
           </section>
@@ -65,6 +59,8 @@
             <div class="section-heading"><span>03</span><h2 id="servicesTitle">الخدمات والأسعار</h2></div>
             <div id="serviceRows" class="service-rows"></div>
             <button id="addService" class="button button--outline" type="button">+ إضافة خدمة</button>
+            <p class="suggestion-hint">بعد إصدار العرض، يظهر وصف كل خدمة تكتبها كاقتراح في عروضك القادمة على جميع أجهزتك.</p>
+            <p id="suggestionsStatus" class="suggestions-status" role="status" aria-live="polite"></p>
           </section>
 
           <section class="form-section" aria-labelledby="termsTitle">
@@ -105,14 +101,14 @@
               <div><span>تاريخ الإصدار</span><strong id="viewIssueDate" dir="ltr"></strong></div>
             </div>
 
-            <section class="paper-client">
-              <span class="paper-label">موجّه إلى</span>
+            <section id="viewClientSection" class="paper-client">
+              <span id="viewClientLabel" class="paper-label">موجّه إلى</span>
               <h3 id="viewClient"></h3>
               <p id="viewContact" hidden></p>
-              <div class="paper-project"><span class="paper-label">الموضوع</span><strong id="viewTitle"></strong><span id="viewProject" hidden></span></div>
+              <div id="viewProjectBlock" class="paper-project"><span class="paper-label">الموضوع</span><strong id="viewTitle"></strong><span id="viewProject" hidden></span></div>
             </section>
 
-            <section class="paper-services" aria-labelledby="paperServicesTitle">
+            <section id="viewServicesSection" class="paper-services" aria-labelledby="paperServicesTitle">
               <h3 id="paperServicesTitle">تفاصيل الخدمة</h3>
               <table>
                 <thead><tr><th scope="col">الخدمة</th><th scope="col">المدة</th><th scope="col">الكمية</th><th scope="col">القيمة</th></tr></thead>
