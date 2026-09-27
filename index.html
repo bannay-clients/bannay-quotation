@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>منشئ عروض الأسعار | Bannay Solutions Establishment</title>
+    <link rel="icon" type="image/png" href="assets/brand/bannay-favicon.png" />
+    <link rel="stylesheet" href="quotation.css" />
+    <script src="quotation.js" defer></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-header__brand">
+        <img class="app-logo" src="assets/brand/bannay-white.svg" alt="BANNAY" />
+        <div>
+          <strong dir="ltr">Bannay Solutions Establishment</strong>
+          <span>منشئ عروض الأسعار</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span id="saveStatus" class="save-status" role="status" aria-live="polite"></span>
+        <button id="newQuote" class="button button--ghost" type="button">عرض جديد</button>
+        <button id="printQuote" class="button button--primary" type="button">تصدير PDF</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="editor" aria-labelledby="editorTitle">
+        <div class="editor-intro">
+          <h1 id="editorTitle">إنشاء عرض سعر</h1>
+          <p>عبّئ البيانات وشاهد النتيجة مباشرة. تُحفظ المسودة على هذا الجهاز فقط.</p>
+        </div>
+
+        <form id="quoteForm" novalidate>
+          <section class="form-section" aria-labelledby="basicsTitle">
+            <div class="section-heading"><span>01</span><h2 id="basicsTitle">بيانات العرض</h2></div>
+            <div class="field-grid field-grid--three">
+              <label class="field"><span>رقم العرض <b aria-hidden="true">*</b></span><input id="quoteNumber" name="quoteNumber" required maxlength="40" autocomplete="off" dir="ltr" /></label>
+              <label class="field"><span>تاريخ الإصدار <b aria-hidden="true">*</b></span><input id="issueDate" name="issueDate" type="date" required /></label>
+              <label class="field"><span>صالح حتى <b aria-hidden="true">*</b></span><input id="validUntil" name="validUntil" type="date" required /></label>
+            </div>
+            <div class="field-grid field-grid--two">
+              <label class="field"><span>عنوان العرض <b aria-hidden="true">*</b></span><input id="quoteTitle" name="quoteTitle" required maxlength="100" placeholder="مثال: تصوير وتغطية فعالية" /></label>
+              <label class="field"><span>اسم المشروع أو الفعالية</span><input id="projectName" name="projectName" maxlength="120" placeholder="اختياري" /></label>
+            </div>
+          </section>
+
+          <section class="form-section" aria-labelledby="clientTitle">
+            <div class="section-heading"><span>02</span><h2 id="clientTitle">بيانات العميل</h2></div>
+            <div class="field-grid field-grid--two">
+              <label class="field"><span>اسم العميل أو الجهة <b aria-hidden="true">*</b></span><input id="clientName" name="clientName" required maxlength="150" placeholder="الاسم الذي سيظهر في العرض" /></label>
+              <label class="field"><span>اسم جهة الاتصال</span><input id="contactName" name="contactName" maxlength="100" placeholder="اختياري" /></label>
+            </div>
+          </section>
+
+          <section class="form-section" aria-labelledby="servicesTitle">
+            <div class="section-heading"><span>03</span><h2 id="servicesTitle">الخدمات والأسعار</h2></div>
+            <div id="serviceRows" class="service-rows"></div>
+            <button id="addService" class="button button--outline" type="button">+ إضافة خدمة</button>
+          </section>
+
+          <section class="form-section" aria-labelledby="termsTitle">
+            <div class="section-heading"><span>04</span><h2 id="termsTitle">التفاصيل والشروط</h2></div>
+            <div class="field-grid field-grid--two">
+              <label class="field"><span>ملاحظات نطاق العمل</span><textarea id="scopeNotes" name="scopeNotes" rows="3" maxlength="800" placeholder="مثال: يشمل التصوير وتسليم الصور النهائية"></textarea></label>
+              <label class="field"><span>شروط العرض</span><textarea id="terms" name="terms" rows="3" maxlength="800" placeholder="مثال: يبدأ التنفيذ بعد اعتماد العرض"></textarea></label>
+            </div>
+            <label class="field field--tax"><span>ملاحظة ضريبة القيمة المضافة</span><textarea id="taxNote" name="taxNote" rows="2" maxlength="300"></textarea><small>تظهر أسفل الإجمالي. راجعها إذا تغيّرت حالة تسجيل المؤسسة الضريبي.</small></label>
+            <div class="field-grid field-grid--two">
+              <label class="field"><span>اسم مسؤول التنسيق</span><input id="coordinator" name="coordinator" maxlength="100" /></label>
+              <label class="field"><span>رقم التواصل</span><input id="phone" name="phone" maxlength="30" inputmode="tel" dir="ltr" /></label>
+            </div>
+          </section>
+        </form>
+        <p class="editor-footnote">تظهر بيانات التحويل في العرض باسم المؤسسة وفق شهادة الآيبان. راجع السعر والشروط قبل إرسال الملف للعميل.</p>
+      </section>
+
+      <aside class="preview-panel" aria-labelledby="previewTitle">
+        <div class="preview-toolbar"><h2 id="previewTitle">معاينة العرض</h2><span>مقاس A4</span></div>
+        <article id="quotePaper" class="paper" aria-label="معاينة عرض السعر">
+          <div class="paper-accent"></div>
+          <div class="paper-content">
+            <header class="paper-header">
+              <div class="paper-issuer">
+                <img class="paper-logo" src="assets/brand/bannay-white.svg" alt="BANNAY" />
+                <strong dir="ltr">Bannay Solutions Establishment</strong>
+                <span>الرقم الوطني الموحد <bdi dir="ltr">7054477570</bdi></span>
+              </div>
+              <div class="paper-heading">
+                <span class="paper-heading__en">QUOTATION</span>
+                <h2>عرض سعر</h2>
+              </div>
+            </header>
+
+            <div class="paper-meta">
+              <div><span>رقم العرض</span><strong id="viewNumber" dir="ltr"></strong></div>
+              <div><span>تاريخ الإصدار</span><strong id="viewIssueDate" dir="ltr"></strong></div>
+              <div><span>صالح حتى</span><strong id="viewValidUntil" dir="ltr"></strong></div>
+            </div>
+
+            <section class="paper-client">
+              <span class="paper-label">موجّه إلى</span>
+              <h3 id="viewClient"></h3>
+              <p id="viewContact" hidden></p>
+              <div class="paper-project"><span class="paper-label">الموضوع</span><strong id="viewTitle"></strong><span id="viewProject" hidden></span></div>
+            </section>
+
+            <section class="paper-services" aria-labelledby="paperServicesTitle">
+              <h3 id="paperServicesTitle">تفاصيل الخدمة</h3>
+              <table>
+                <thead><tr><th scope="col">الخدمة</th><th scope="col">المدة</th><th scope="col">الكمية</th><th scope="col">القيمة</th></tr></thead>
+                <tbody id="viewServices"></tbody>
+              </table>
+              <div class="paper-total"><span>الإجمالي</span><strong id="viewTotal"></strong></div>
+              <p id="viewTaxNote" class="paper-tax-note"></p>
+            </section>
+
+            <section id="viewNotesSection" class="paper-notes" hidden><h3>نطاق العمل</h3><p id="viewNotes"></p></section>
+            <section id="viewTermsSection" class="paper-notes" hidden><h3>الشروط</h3><p id="viewTerms"></p></section>
+
+            <section class="paper-payment" aria-labelledby="paymentTitle">
+              <h3 id="paymentTitle">بيانات التحويل</h3>
+              <dl>
+                <div><dt>اسم المستفيد</dt><dd dir="ltr">Bannay Solutions Establishment</dd></div>
+                <div><dt>البنك</dt><dd>مصرف الراجحي</dd></div>
+                <div><dt>الآيبان</dt><dd><bdi dir="ltr">SA1680000445608016276308</bdi></dd></div>
+              </dl>
+            </section>
+
+            <footer class="paper-footer"><span id="viewCoordinator"></span><span id="viewPhone" dir="ltr"></span></footer>
+          </div>
+        </article>
+      </aside>
+    </main>
+  </body>
+</html>
