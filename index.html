@@ -123,11 +123,17 @@
 
             <section class="paper-payment" aria-labelledby="paymentTitle">
               <h3 id="paymentTitle">بيانات التحويل</h3>
-              <dl>
-                <div><dt>اسم المستفيد</dt><dd>مؤسسة باناي سولوشنز</dd></div>
-                <div><dt>البنك</dt><dd>مصرف الراجحي</dd></div>
-                <div><dt>الآيبان</dt><dd><bdi dir="ltr">SA1680000445608016276308</bdi></dd></div>
-              </dl>
+              <div class="paper-payment__layout">
+                <dl>
+                  <div><dt>اسم المستفيد</dt><dd>مؤسسة باناي سولوشنز</dd></div>
+                  <div><dt>البنك</dt><dd>مصرف الراجحي</dd></div>
+                  <div><dt>الآيبان</dt><dd><bdi dir="ltr">SA1680000445608016276308</bdi></dd></div>
+                </dl>
+                <figure class="paper-payment__qr">
+                  <img src="assets/brand/iban-qr.png" alt="رمز الآيبان كما ورد في شهادة مصرف الراجحي" width="300" height="300" />
+                  <figcaption>باركود الآيبان</figcaption>
+                </figure>
+              </div>
             </section>
 
             <footer class="paper-footer"><span id="viewCoordinator"></span><span id="viewPhone" dir="ltr"></span></footer>
