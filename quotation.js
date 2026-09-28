@@ -366,9 +366,16 @@
   }
 
   function printIssuedQuote() {
-    const number = document.getElementById('quoteNumber').value.trim();
-    document.title = `عرض سعر ${number} - Bannay Solutions Establishment`;
+    const originalTitle = document.title;
+    const clientName = document.getElementById('clientName').value.trim();
+    const safeClientName = clientName
+      .replace(/[<>:"/\\|?*\u0000-\u001f]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/[. ]+$/g, '')
+      .trim();
+    document.title = safeClientName ? `عرض سعر - ${safeClientName}` : 'عرض سعر';
     window.print();
+    document.title = originalTitle;
   }
 
   form.addEventListener('input', event => {
