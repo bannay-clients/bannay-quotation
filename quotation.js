@@ -283,8 +283,8 @@
       const fields = makeElement('div', 'service-row__fields');
       fields.appendChild(makeServiceNameField(service));
       fields.appendChild(makeField('المدة', 'duration', service.duration, { placeholder: 'مثال: ٤ ساعات' }));
-      fields.appendChild(makeField('الكمية', 'quantity', service.quantity, { type: 'number', min: 1, step: 1, inputMode: 'numeric' }));
-      fields.appendChild(makeField('سعر الوحدة', 'price', service.price, { type: 'number', min: 0, step: 0.01, inputMode: 'decimal' }));
+      fields.appendChild(makeField('العدد', 'quantity', service.quantity, { type: 'number', min: 1, step: 1, inputMode: 'numeric' }));
+      fields.appendChild(makeField('سعر الشخص', 'price', service.price, { type: 'number', min: 0, step: 0.01, inputMode: 'decimal' }));
       card.appendChild(fields);
       const extra = makeElement('div', 'service-row__extra');
       extra.appendChild(makeField('اسم المنفذ أو المودل (اختياري)', 'performer', service.performer));
