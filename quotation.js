@@ -369,7 +369,7 @@
     const originalTitle = document.title;
     const clientName = document.getElementById('clientName').value.trim();
     const safeClientName = clientName
-      .replace(/[<>:"/\\|?*\u0000-\u001f]/g, ' ')
+      .replace(/[<>:"\/\\|?*\u0000-\u001f]/g, ' ')
       .replace(/\s+/g, ' ')
       .replace(/[. ]+$/g, '')
       .trim();
