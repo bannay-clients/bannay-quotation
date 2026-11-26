@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>اتفاق تنفيذ ونشر محتوى إعلاني UGC</title>
+<link rel="icon" type="image/png" href="../assets/brand/bannay-favicon.png">
+<link rel="stylesheet" href="agreement.css">
+<script defer src="agreement.js"></script>
+</head>
+<body>
+<header class="top">
+  <a href="../" aria-label="العودة إلى مستندات بنّاي"><img src="../assets/brand/bannay-white.svg" alt="" width="132"></a>
+  <a href="#document">معاينة الاتفاق</a>
+</header>
+<main>
+  <section class="intro">
+    <h1>اتفاق تنفيذ ونشر محتوى إعلاني <bdi dir="ltr">UGC</bdi></h1>
+    <p>عبّئ بيانات الحملة، راجع الاتفاق، ثم احفظه بصيغة PDF للتوقيع.</p>
+    <a href="index.html#example" target="_blank" rel="noopener">فتح مثال تجريبي في تبويب منفصل</a>
+    <p id="example-note" hidden>أنت في المثال التجريبي. <a href="index.html">افتح القالب الفارغ</a></p>
+  </section>
+  <div class="workspace">
+    <form id="agreement-form" autocomplete="off">
+      <fieldset>
+        <legend>بيانات الحملة</legend>
+        <div class="pair">
+          <label>اسم المودل أو صانع المحتوى<input name="creator" maxlength="150" required></label>
+          <label>اسم البراند<input name="brand" maxlength="150" required></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>المقاطع</legend>
+        <p class="muted">عدد المقاطع المضافة: <output id="count">٠</output></p>
+        <div id="clips"></div>
+        <button type="button" id="add">إضافة مقطع</button>
+      </fieldset>
+      <fieldset>
+        <legend>الأجر والتوقيع</legend>
+        <div class="pair">
+          <label>الأجر المتفق عليه (ريال سعودي)<input name="fee" type="number" min="0" step="0.01" required></label>
+          <label>اسم ممثل المؤسسة <small>(اختياري)</small><input name="representative" maxlength="150"></label>
+        </div>
+        <label>موعد الدفع أو شرطه<textarea name="payment" maxlength="500" rows="2" required></textarea></label>
+      </fieldset>
+      <p id="status" role="status"></p>
+      <button class="primary" type="submit">تصدير PDF للتوقيع</button>
+    </form>
+    <article id="document" aria-label="معاينة الاتفاق" tabindex="-1">
+      <header class="paper-head">
+        <img src="../assets/brand/bannay-white.svg" alt="بنّاي" width="115">
+        <h2>اتفاق تنفيذ ونشر محتوى إعلاني <bdi dir="ltr">UGC</bdi></h2>
+      </header>
+      <p id="sample-stamp" hidden>مثال تجريبي للمراجعة فقط — غير مخصص للتوقيع</p>
+      <section class="block">
+        <h3>أطراف الاتفاق</h3>
+        <dl class="facts">
+          <div><dt>الطرف الأول</dt><dd>مؤسسة باناي سولوشنز (بنّاي)</dd></div>
+          <div><dt>الطرف الثاني</dt><dd id="out-creator" dir="auto"></dd></div>
+          <div><dt>البراند</dt><dd id="out-brand" dir="auto"></dd></div>
+          <div><dt>عدد المقاطع</dt><dd id="out-count"></dd></div>
+        </dl>
+      </section>
+      <section class="block">
+        <h3>التنفيذ والتسليم والنشر</h3>
+        <p>يلتزم الطرف الثاني بتصوير المقاطع ومونتاجها وتسليمها للمؤسسة وفق الفكرة والنقاط الإلزامية والبريف أو السكربت المرفق عند توفره، وفي موعد التسليم المحدد لكل مقطع.</p>
+        <p>إذا كان النشر مطلوبًا لمقطع، يلتزم الطرف الثاني بنشره بعد الانتهاء منه في حسابه المتفق عليه على المنصة المحددة. وإذا كان المقطع للتسليم فقط، يقتصر التزامه على التصوير والمونتاج والتسليم. يلتزم الطرف الثاني عند النشر بمتطلبات الترخيص والإفصاح الإعلاني المطبقة.</p>
+      </section>
+      <section class="block">
+        <h3>تفاصيل المقاطع</h3>
+        <div id="out-clips"></div>
+      </section>
+      <section class="block">
+        <h3>الأجر المتفق عليه</h3>
+        <p>تلتزم المؤسسة بدفع الأجر الموضح أدناه للطرف الثاني وفق موعد الدفع أو شرطه.</p>
+        <dl class="facts">
+          <div><dt>الأجر الإجمالي</dt><dd id="out-fee"></dd></div>
+          <div><dt>موعد الدفع أو شرطه</dt><dd id="out-payment" dir="auto"></dd></div>
+        </dl>
+      </section>
+      <section class="block signatures">
+        <h3>التوقيعات</h3>
+        <div class="pair">
+          <section class="signature"><h4>ممثل المؤسسة</h4><p>الاسم <span id="out-representative" dir="auto"></span></p><p>التوقيع <span></span></p><p>التاريخ <span></span></p></section>
+          <section class="signature"><h4>المودل أو صانع المحتوى</h4><p>الاسم <span id="signature-creator" dir="auto"></span></p><p>التوقيع <span></span></p><p>التاريخ <span></span></p></section>
+        </div>
+      </section>
+    </article>
+  </div>
+</main>
+<template id="clip-editor">
+  <section class="clip">
+    <div class="clip-head"><h3></h3><button type="button" class="remove">حذف المقطع</button></div>
+    <label>الفكرة الأساسية<textarea name="idea" maxlength="600" rows="2" required></textarea></label>
+    <label>النقاط الإلزامية<textarea name="points" maxlength="1000" rows="3" required></textarea></label>
+    <label>رابط البريف أو السكربت <small>(اختياري)</small><input type="url" name="brief" dir="ltr" maxlength="600"></label>
+    <div class="pair">
+      <label>موعد التسليم<input type="date" name="due" required></label>
+      <label>النشر من حساب المودل<select name="publish" required><option value="">اختر طريقة التنفيذ</option><option value="yes">تصوير ومونتاج وتسليم ونشر</option><option value="no">تصوير ومونتاج وتسليم فقط</option></select></label>
+    </div>
+    <div class="publication" hidden>
+      <label>منصة النشر<input name="platform" maxlength="100" disabled></label>
+    </div>
+  </section>
+</template>
+</body>
+</html>
