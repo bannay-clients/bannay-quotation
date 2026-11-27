@@ -7,9 +7,9 @@
     <meta name="referrer" content="no-referrer" />
     <title>منشئ عروض الأسعار | Bannay Solutions Establishment</title>
     <link rel="icon" type="image/png" href="assets/brand/bannay-favicon.png" />
-    <link rel="stylesheet" href="quotation.css?v=print-fit-2" />
+    <link rel="stylesheet" href="quotation.css?v=history-1" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js" defer></script>
-    <script src="quotation.js?v=print-fit-2" defer></script>
+    <script src="quotation.js?v=history-1" defer></script>
   </head>
   <body>
     <header class="app-header">
@@ -35,6 +35,8 @@
         <div class="editor-intro">
           <h1 id="editorTitle">إنشاء عرض سعر</h1>
           <p>عبّئ البيانات وشاهد النتيجة مباشرة. يُعتمد رقم متسلسل موحّد عند الإصدار، وتُحفظ المسودة على هذا الجهاز.</p>
+          <p class="history-hint">بعد تسجيل الدخول، اضغط على خانة تعبئة لاختيار قيمة من عروضك الصادرة، أو اكتب للتصفية.</p>
+          <p id="historyStatus" class="suggestions-status" role="status"></p>
         </div>
 
         <form id="quoteForm" novalidate>
@@ -62,7 +64,6 @@
             <div class="section-heading"><span>03</span><h2 id="servicesTitle">الخدمات والأسعار</h2></div>
             <div id="serviceRows" class="service-rows"></div>
             <button id="addService" class="button button--outline" type="button">+ إضافة خدمة</button>
-            <p class="suggestion-hint">بعد إصدار العرض، يظهر وصف كل خدمة تكتبها كاقتراح في عروضك القادمة على جميع أجهزتك.</p>
             <p id="suggestionsStatus" class="suggestions-status" role="status" aria-live="polite"></p>
           </section>
 
@@ -82,7 +83,7 @@
               <label class="field"><span>اسم ممثل العميل</span><input id="approvalRepresentative" name="approvalRepresentative" maxlength="150" placeholder="اختياري" /></label>
               <label class="field"><span>تاريخ الاعتماد</span><input id="approvalDate" name="approvalDate" type="date" /></label>
             </div>
-            <label class="field field--tax"><span>ملاحظة ضريبة القيمة المضافة</span><textarea id="taxNote" name="taxNote" rows="2" maxlength="300"></textarea><small>تظهر أسفل الإجمالي. راجعها إذا تغيّرت حالة تسجيل المؤسسة الضريبي.</small></label>
+            <label class="field field--tax"><span>ملاحظة ضريبة القيمة المضافة</span><textarea id="taxNote" name="taxNote" rows="2" readonly></textarea><small>تظهر أسفل الإجمالي.</small></label>
             <div class="field-grid field-grid--two">
               <label class="field"><span>اسم مسؤول التنسيق</span><input id="coordinator" name="coordinator" maxlength="100" /></label>
               <label class="field"><span>رقم التواصل</span><input id="phone" name="phone" maxlength="30" inputmode="tel" dir="ltr" /></label>
