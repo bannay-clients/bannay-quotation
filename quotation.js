@@ -480,19 +480,38 @@
   function fitPrintPage() {
     // Keep a small buffer below the full A4 height for print rounding.
     const maxHeight = 295 * 96 / 25.4;
+    const comfortableHeight = 286 * 96 / 25.4;
+    const setSpacing = room => paper.style.setProperty('--print-room', String(room));
+    const measure = () => paper.getBoundingClientRect().height;
     paper.style.removeProperty('--print-scale');
-    paper.dataset.printLayout = 'standard';
-    if (paper.getBoundingClientRect().height <= maxHeight) return;
+    paper.dataset.printLayout = '';
+    setSpacing(0);
+    const compactHeight = measure();
+    if (compactHeight > maxHeight) {
+      paper.style.setProperty('--print-scale', String(maxHeight / compactHeight));
+      return;
+    }
+    if (compactHeight >= comfortableHeight) return;
 
-    paper.dataset.printLayout = 'compact';
-    const height = paper.getBoundingClientRect().height;
-    if (height > maxHeight) paper.style.setProperty('--print-scale', String(maxHeight / height));
+    setSpacing(1);
+    if (measure() <= comfortableHeight) return;
+    // Fill the available space with modest type and spacing increases, not page zoom.
+    let low = 0;
+    let high = 1;
+    for (let step = 0; step < 7; step++) {
+      const candidate = (low + high) / 2;
+      setSpacing(candidate);
+      if (measure() <= comfortableHeight) low = candidate;
+      else high = candidate;
+    }
+    setSpacing(low);
   }
 
   window.addEventListener('beforeprint', fitPrintPage);
   window.addEventListener('afterprint', () => {
     delete paper.dataset.printLayout;
     paper.style.removeProperty('--print-scale');
+    paper.style.removeProperty('--print-room');
   });
 
   async function printIssuedQuote() {

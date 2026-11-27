@@ -157,6 +157,7 @@ input[type="date"]{direction:ltr;text-align:right}
 
 /* These dimensions apply during both the print measurement and actual output. */
 .paper[data-print-layout] {
+  --room: var(--print-room, 0);
   width: 210mm;
   min-height: 0;
   box-shadow: none;
@@ -165,43 +166,40 @@ input[type="date"]{direction:ltr;text-align:right}
   -webkit-print-color-adjust: exact;
 }
 .paper[data-print-layout] .paper-accent { height: 2mm; }
-.paper[data-print-layout] .paper-content { padding: 7mm 14mm; }
+.paper[data-print-layout] .paper-content { padding: calc(5mm + 2mm * var(--room)) 14mm; }
 .paper[data-print-layout] .paper-header { gap: 20px; padding: 3mm 6mm; }
 .paper[data-print-layout] .paper-logo { width: 42mm; }
 .paper[data-print-layout] .paper-issuer strong { font-size: 10pt; }
 .paper[data-print-layout] .paper-issuer span { font-size: 8pt; }
 .paper[data-print-layout] .paper-heading__en { font-size: 11px; }
 .paper[data-print-layout] .paper-heading h2 { font-size: 21pt; }
-.paper[data-print-layout] .paper-client { padding: 2.5mm 0; }
-.paper[data-print-layout] .paper-services { padding-top: 3mm; }
+.paper[data-print-layout] .paper-meta { padding-block: calc(1.5mm + 1.5mm * var(--room)); }
+.paper[data-print-layout] .paper-client { padding-block: calc(1.5mm + 2mm * var(--room)); }
+.paper[data-print-layout] .paper-services { padding-top: calc(2mm + 2mm * var(--room)); }
 .paper[data-print-layout] .paper-services th,
-.paper[data-print-layout] .paper-services td { font-size: 10pt; padding: 3mm 2mm; }
-.paper[data-print-layout] .paper-total { font-size: 17px; }
+.paper[data-print-layout] .paper-services td { font-size: 10pt; padding: calc(1.5mm + 1.5mm * var(--room)) 2mm; }
+.paper[data-print-layout] .paper-total { font-size: 17px; margin-top: calc(2mm + 2mm * var(--room)); padding-block: calc(1.5mm + 1mm * var(--room)); }
 .paper[data-print-layout] .paper-total strong { font-size: 20px; }
-.paper[data-print-layout] .paper-notes { margin-top: 4mm; }
-.paper[data-print-layout] .paper-payment { margin-top: 5mm; padding-top: 3mm; }
+.paper[data-print-layout] .paper-tax-note { margin-top: calc(1mm + 1mm * var(--room)); }
+.paper[data-print-layout] .paper-notes,
+.paper[data-print-layout] .paper-payment,
+.paper[data-print-layout] .paper-approval { margin-top: calc(2.5mm + 3mm * var(--room)); }
+.paper[data-print-layout] .paper-notes h3,
+.paper[data-print-layout] .paper-payment h3 { margin-bottom: calc(1mm + 2mm * var(--room)); }
+.paper[data-print-layout] .paper-payment { padding-top: calc(2mm + 2mm * var(--room)); }
 .paper[data-print-layout] .paper-payment__layout { grid-template-columns: minmax(0,1fr) 34mm; gap: 5mm; }
-.paper[data-print-layout] .paper-payment__qr img { width: 32mm; }
+.paper[data-print-layout] .paper-payment__qr img { width: calc(27mm + 4mm * var(--room)); }
 .paper[data-print-layout] .paper-payment dl>div { display: flex; gap: 8px; }
 .paper[data-print-layout] .paper-payment dt { min-width: 82px; }
-.paper[data-print-layout] .paper-footer { margin-top: 3mm; }
-
-.paper[data-print-layout="compact"] .paper-content { padding-block: 5mm; }
-.paper[data-print-layout="compact"] .paper-meta { padding-block: 1.5mm; }
-.paper[data-print-layout="compact"] .paper-client { padding-block: 1.5mm; }
-.paper[data-print-layout="compact"] .paper-services { padding-top: 2mm; }
-.paper[data-print-layout="compact"] .paper-services th,
-.paper[data-print-layout="compact"] .paper-services td { padding-block: 1.5mm; }
-.paper[data-print-layout="compact"] .paper-total { margin-top: 2mm; padding-block: 1.5mm; }
-.paper[data-print-layout="compact"] .paper-tax-note { margin-top: 1mm; }
-.paper[data-print-layout="compact"] .paper-notes,
-.paper[data-print-layout="compact"] .paper-payment,
-.paper[data-print-layout="compact"] .paper-approval { margin-top: 2.5mm; }
-.paper[data-print-layout="compact"] .paper-notes h3,
-.paper[data-print-layout="compact"] .paper-payment h3 { margin-bottom: 1mm; }
-.paper[data-print-layout="compact"] .paper-payment { padding-top: 2mm; }
-.paper[data-print-layout="compact"] .paper-payment__qr img { width: 27mm; }
-.paper[data-print-layout="compact"] .paper-footer { margin-top: 2mm; padding-top: 1.5mm; }
+.paper[data-print-layout] .paper-footer { margin-top: calc(2mm + 1mm * var(--room)); padding-top: calc(1.5mm + 0.5mm * var(--room)); }
+.paper[data-print-layout] .paper-meta span,
+.paper[data-print-layout] .paper-label,
+.paper[data-print-layout] .paper-tax-note,
+.paper[data-print-layout] .paper-approval,
+.paper[data-print-layout] .paper-footer { font-size: calc(8.25pt + 1.25pt * var(--room)); }
+.paper[data-print-layout] .paper-notes p,
+.paper[data-print-layout] .paper-terms,
+.paper[data-print-layout] .paper-payment dl>div { font-size: calc(9pt + 1.25pt * var(--room)); }
 
 @media print {
   html, body { background: #fff !important; width: 210mm; }
