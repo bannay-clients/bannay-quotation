@@ -154,4 +154,60 @@ input[type="date"]{direction:ltr;text-align:right}
 @media(max-width:700px){.app-header{align-items:flex-start;flex-direction:column;gap:13px}.app-header__brand{flex-wrap:wrap}.app-header__brand strong{font-size:14px}.app-logo{width:130px}.header-actions{width:100%;justify-content:flex-start}.save-status{order:3;text-align:right;min-width:0;width:100%}.workspace{padding:19px 12px 45px;gap:22px}.form-section{padding:19px 15px}.field-grid--three,.field-grid--two{grid-template-columns:1fr}.service-row__fields{grid-template-columns:repeat(2,minmax(0,1fr))}.service-row__fields .field:first-child{grid-column:1/-1}.preview-panel{padding:9px}.paper{min-height:0}.paper-content{padding:25px 19px}.paper-header{padding:12px;gap:8px}.paper-logo{width:120px}.paper-issuer strong{font-size:9px}.paper-issuer span{font-size:8px}.paper-heading__en{font-size:8px}.paper-heading h2{font-size:19px}.paper-services th,.paper-services td{padding:8px 5px;font-size:10px}.paper-total{font-size:14px}.paper-total strong{font-size:17px}.paper-payment__layout{grid-template-columns:minmax(0,1fr) 116px;gap:10px}.paper-payment__qr img{width:108px}}
 @media screen and (max-width:430px){.paper-payment__layout{grid-template-columns:minmax(0,1fr) 84px}.paper-payment__qr img{width:82px}.paper-payment dl>div{display:grid;gap:1px}.paper-payment dt{min-width:0}}
 @page quotation{size:A4;margin:0}
-@media print{html,body{background:#fff!important;width:210mm}.app-header,.editor,.preview-toolbar{display:none!important}.workspace{display:block;max-width:none;margin:0;padding:0}.preview-panel{position:static;border:0;border-radius:0;box-shadow:none;background:#fff;padding:0;margin:0;max-width:none;width:auto}.paper{page:quotation;width:210mm;min-height:0;box-shadow:none;overflow:visible;print-color-adjust:exact;-webkit-print-color-adjust:exact}.paper-accent{height:2mm}.paper-content{padding:7mm 14mm}.paper-header,.paper-meta,.paper-client,.paper-total,.paper-payment,.paper-approval,.paper-footer{break-inside:avoid}.paper-services tr,.paper-terms li{break-inside:avoid}.paper-notes h3{break-after:avoid}.paper-header{padding:3mm 6mm}.paper-logo{width:42mm}.paper-issuer strong{font-size:10pt}.paper-issuer span{font-size:8pt}.paper-heading h2{font-size:21pt}.paper-client{padding:2.5mm 0}.paper-services{padding-top:3mm}.paper-services table{font-size:10pt}.paper-services th,.paper-services td{padding:3mm 2mm}.paper-notes{margin-top:4mm}.paper-payment{margin-top:5mm;padding-top:3mm}.paper-payment__layout{grid-template-columns:minmax(0,1fr) 34mm;gap:5mm}.paper-payment__qr img{width:32mm}.paper-footer{margin-top:3mm}}
+
+/* These dimensions apply during both the print measurement and actual output. */
+.paper[data-print-layout] {
+  width: 210mm;
+  min-height: 0;
+  box-shadow: none;
+  overflow: visible;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.paper[data-print-layout] .paper-accent { height: 2mm; }
+.paper[data-print-layout] .paper-content { padding: 7mm 14mm; }
+.paper[data-print-layout] .paper-header { gap: 20px; padding: 3mm 6mm; }
+.paper[data-print-layout] .paper-logo { width: 42mm; }
+.paper[data-print-layout] .paper-issuer strong { font-size: 10pt; }
+.paper[data-print-layout] .paper-issuer span { font-size: 8pt; }
+.paper[data-print-layout] .paper-heading__en { font-size: 11px; }
+.paper[data-print-layout] .paper-heading h2 { font-size: 21pt; }
+.paper[data-print-layout] .paper-client { padding: 2.5mm 0; }
+.paper[data-print-layout] .paper-services { padding-top: 3mm; }
+.paper[data-print-layout] .paper-services th,
+.paper[data-print-layout] .paper-services td { font-size: 10pt; padding: 3mm 2mm; }
+.paper[data-print-layout] .paper-total { font-size: 17px; }
+.paper[data-print-layout] .paper-total strong { font-size: 20px; }
+.paper[data-print-layout] .paper-notes { margin-top: 4mm; }
+.paper[data-print-layout] .paper-payment { margin-top: 5mm; padding-top: 3mm; }
+.paper[data-print-layout] .paper-payment__layout { grid-template-columns: minmax(0,1fr) 34mm; gap: 5mm; }
+.paper[data-print-layout] .paper-payment__qr img { width: 32mm; }
+.paper[data-print-layout] .paper-payment dl>div { display: flex; gap: 8px; }
+.paper[data-print-layout] .paper-payment dt { min-width: 82px; }
+.paper[data-print-layout] .paper-footer { margin-top: 3mm; }
+
+.paper[data-print-layout="compact"] .paper-content { padding-block: 5mm; }
+.paper[data-print-layout="compact"] .paper-meta { padding-block: 1.5mm; }
+.paper[data-print-layout="compact"] .paper-client { padding-block: 1.5mm; }
+.paper[data-print-layout="compact"] .paper-services { padding-top: 2mm; }
+.paper[data-print-layout="compact"] .paper-services th,
+.paper[data-print-layout="compact"] .paper-services td { padding-block: 1.5mm; }
+.paper[data-print-layout="compact"] .paper-total { margin-top: 2mm; padding-block: 1.5mm; }
+.paper[data-print-layout="compact"] .paper-tax-note { margin-top: 1mm; }
+.paper[data-print-layout="compact"] .paper-notes,
+.paper[data-print-layout="compact"] .paper-payment,
+.paper[data-print-layout="compact"] .paper-approval { margin-top: 2.5mm; }
+.paper[data-print-layout="compact"] .paper-notes h3,
+.paper[data-print-layout="compact"] .paper-payment h3 { margin-bottom: 1mm; }
+.paper[data-print-layout="compact"] .paper-payment { padding-top: 2mm; }
+.paper[data-print-layout="compact"] .paper-payment__qr img { width: 27mm; }
+.paper[data-print-layout="compact"] .paper-footer { margin-top: 2mm; padding-top: 1.5mm; }
+
+@media print {
+  html, body { background: #fff !important; width: 210mm; }
+  .app-header, .editor, .preview-toolbar { display: none !important; }
+  .workspace { display: block; max-width: none; margin: 0; padding: 0; }
+  .preview-panel { page: quotation; position: static; border: 0; border-radius: 0; box-shadow: none; background: #fff; padding: 0; margin: 0; max-width: none; width: auto; }
+  .paper { width: 210mm; min-height: 0; box-shadow: none; overflow: visible; }
+  .paper[data-print-layout] { zoom: var(--print-scale, 1); margin-inline: auto; break-inside: avoid; }
+}

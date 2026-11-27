@@ -12,6 +12,7 @@
   const suggestionsStatus = document.getElementById('suggestionsStatus');
   const authToggle = document.getElementById('authToggle');
   const printButton = document.getElementById('printQuote');
+  const paper = document.getElementById('quotePaper');
   const supabase = window.supabase?.createClient(
     'https://pufuhhqfbqqzskancrrp.supabase.co',
     'sb_publishable_zVYTPXVsNWyqE8zfO8CYig_Vn2ZQfc6'
@@ -476,7 +477,29 @@
     }
   }
 
-  function printIssuedQuote() {
+  function fitPrintPage() {
+    // Keep a small buffer below the full A4 height for print rounding.
+    const maxHeight = 295 * 96 / 25.4;
+    paper.style.removeProperty('--print-scale');
+    paper.dataset.printLayout = 'standard';
+    if (paper.getBoundingClientRect().height <= maxHeight) return;
+
+    paper.dataset.printLayout = 'compact';
+    const height = paper.getBoundingClientRect().height;
+    if (height > maxHeight) paper.style.setProperty('--print-scale', String(maxHeight / height));
+  }
+
+  window.addEventListener('beforeprint', fitPrintPage);
+  window.addEventListener('afterprint', () => {
+    delete paper.dataset.printLayout;
+    paper.style.removeProperty('--print-scale');
+  });
+
+  async function printIssuedQuote() {
+    await Promise.allSettled([
+      document.fonts.ready,
+      ...Array.from(paper.querySelectorAll('img'), image => image.decode())
+    ]);
     const originalTitle = document.title;
     const clientName = document.getElementById('clientName').value.trim();
     const safeClientName = clientName
@@ -485,8 +508,11 @@
       .replace(/[. ]+$/g, '')
       .trim();
     document.title = safeClientName ? `عرض سعر - ${safeClientName}` : 'عرض سعر';
-    window.print();
-    document.title = originalTitle;
+    try {
+      window.print();
+    } finally {
+      document.title = originalTitle;
+    }
   }
 
   form.addEventListener('input', event => {
