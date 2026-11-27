@@ -2,7 +2,10 @@
   'use strict';
 
   const STORAGE_KEY = 'bannay-quotation-draft-v1';
+  const TAX_NOTE = 'المؤسسة غير مسجلة في ضريبة القيمة المضافة، ولا تُتضاف ضريبة القيمة المضافة إلى قيمة هذا العرض.';
   const fieldIds = ['quoteNumber', 'issueDate', 'quoteTitle', 'projectName', 'clientName', 'contactName', 'scopeNotes', 'taxNote', 'coordinator', 'phone', 'approvalRepresentative', 'approvalDate'];
+  const reusableFields = ['quoteTitle', 'projectName', 'clientName', 'contactName', 'scopeNotes', 'coordinator', 'phone', 'approvalRepresentative'];
+  const reusableServiceFields = ['duration', 'quantity', 'price', 'performer'];
   const form = document.getElementById('quoteForm');
   const rows = document.getElementById('serviceRows');
   const termRows = document.getElementById('termRows');
@@ -10,6 +13,7 @@
   const approvalToggle = document.getElementById('showApproval');
   const status = document.getElementById('saveStatus');
   const suggestionsStatus = document.getElementById('suggestionsStatus');
+  const historyStatus = document.getElementById('historyStatus');
   const authToggle = document.getElementById('authToggle');
   const printButton = document.getElementById('printQuote');
   const paper = document.getElementById('quotePaper');
@@ -24,6 +28,10 @@
   let issuedQuoteId = '';
   let signedInUser = null;
   let serviceSuggestions = [];
+  let fieldHistory = new Map();
+  let historyLoadVersion = 0;
+  let activeSuggestion = null;
+  let suggestionMenuNumber = 0;
 
   function localDate(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -34,7 +42,7 @@
     return {
       quoteNumber: '', issueDate: localDate(now), requestId: crypto.randomUUID(), issuedQuoteId: '',
       quoteTitle: '', projectName: '', clientName: '', contactName: '', scopeNotes: '', terms: '', termItems: [],
-      taxNote: 'المؤسسة غير مسجلة حاليًا في ضريبة القيمة المضافة، لذلك لا تُضاف الضريبة إلى هذا العرض.',
+      taxNote: TAX_NOTE,
       showApproval: false, approvalRepresentative: '', approvalDate: '',
       coordinator: 'أنس عمر', phone: '0599599527',
       services: [{ id: crypto.randomUUID(), name: '', performer: '', duration: '', quantity: 1, price: '' }]
@@ -48,7 +56,10 @@
       const saved = JSON.parse(raw);
       if (!saved || typeof saved !== 'object') return makeDefaults();
       const draft = { ...makeDefaults(), ...saved };
-      if (!draft.issuedQuoteId) draft.quoteNumber = '';
+      if (!draft.issuedQuoteId) {
+        draft.quoteNumber = '';
+        draft.taxNote = TAX_NOTE;
+      }
       draft.termItems = Array.isArray(saved.termItems)
         ? saved.termItems.filter(item => typeof item === 'string')
         : String(saved.terms || '').split(/\r?\n/).filter(item => item.trim());
@@ -231,47 +242,165 @@
     if (options.step !== undefined) input.step = String(options.step);
     if (options.inputMode) input.inputMode = options.inputMode;
     label.appendChild(input);
-    return label;
+    return wrapHistory(label, input, `service.${key}`);
   }
 
-  function renderSuggestionChoices(service, input, menu) {
-    const query = input.value.trim().toLocaleLowerCase('ar');
-    const matches = serviceSuggestions.filter(item => item.name.toLocaleLowerCase('ar').includes(query));
-    menu.replaceChildren();
-    for (const suggestion of matches) {
-      const item = makeElement('div', 'service-suggestion');
-      const choice = makeElement('button', 'service-suggestion__choice', suggestion.name);
-      choice.type = 'button';
-      choice.dir = 'auto';
-      choice.addEventListener('click', () => {
-        input.value = suggestion.name;
-        service.name = suggestion.name;
-        menu.hidden = true;
-        renderPreview();
-        saveDraft();
-        input.closest('.service-row')?.querySelector('[data-key="duration"]')?.focus();
-      });
-      const remove = makeElement('button', 'service-suggestion__remove', '×');
-      remove.type = 'button';
-      remove.setAttribute('aria-label', `حذف اقتراح ${suggestion.name}`);
-      remove.addEventListener('click', async () => {
-        remove.disabled = true;
-        const { data, error } = await supabase.from('quotation_service_suggestions')
-          .delete().eq('id', suggestion.id).select('id');
-        if (error || !data?.length) {
-          remove.disabled = false;
-          suggestionsStatus.textContent = 'تعذّر حذف الاقتراح. حاول مرة أخرى.';
-          return;
-        }
-        serviceSuggestions = serviceSuggestions.filter(item => item.id !== suggestion.id);
-        suggestionsStatus.textContent = `حُذف اقتراح ${suggestion.name}`;
-        input.focus();
-        renderSuggestionChoices(service, input, menu);
-      });
-      item.append(choice, remove);
-      menu.appendChild(item);
+  function historyKey(value) {
+    return value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('ar');
+  }
+
+  function addHistoryValue(history, field, value) {
+    if (typeof value !== 'string' && typeof value !== 'number') return;
+    const text = String(value).trim();
+    if (!text) return;
+    if (!history.has(field)) history.set(field, new Map());
+    const list = history.get(field);
+    const key = historyKey(text);
+    if (!list.has(key)) list.set(key, { name: text });
+  }
+
+  function collectFieldHistory(history, snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') return;
+    for (const field of reusableFields) {
+      if (field === 'approvalRepresentative' && !snapshot.showApproval) continue;
+      addHistoryValue(history, field, snapshot[field]);
     }
-    menu.hidden = matches.length === 0;
+    const terms = Array.isArray(snapshot.termItems) ? snapshot.termItems
+      : typeof snapshot.terms === 'string' ? snapshot.terms.split(/\r?\n/) : [];
+    for (const term of terms) addHistoryValue(history, 'term', term);
+    if (!Array.isArray(snapshot.services)) return;
+    for (const service of snapshot.services) {
+      if (!service || typeof service !== 'object' ||
+          ![service.name, service.duration, service.performer, service.price].some(value => value != null && String(value).trim())) continue;
+      for (const field of reusableServiceFields) addHistoryValue(history, `service.${field}`, service[field]);
+    }
+  }
+
+  async function loadFieldHistory() {
+    const version = ++historyLoadVersion;
+    const userId = signedInUser?.id;
+    if (!supabase || !userId) return;
+    const history = new Map();
+    const pageSize = 100;
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabase.from('issued_quotations')
+        .select('snapshot').eq('created_by', userId)
+        .order('issued_at', { ascending: false }).order('id', { ascending: false })
+        .range(from, from + pageSize - 1);
+      if (version !== historyLoadVersion || signedInUser?.id !== userId) return;
+      if (error) {
+        historyStatus.textContent = 'تعذّر تحميل سجل الاقتراحات. أعد تحميل الصفحة للمحاولة.';
+        return;
+      }
+      for (const row of data || []) collectFieldHistory(history, row.snapshot);
+      if (!data || data.length < pageSize) break;
+    }
+    fieldHistory = history;
+    historyStatus.textContent = '';
+    activeSuggestion?.refresh();
+  }
+
+  function attachSuggestions(container, input, field) {
+    container.classList.add('history-field');
+    input.autocomplete = 'off';
+    const menu = makeElement('div', 'service-suggestions');
+    menu.id = `history-menu-${++suggestionMenuNumber}`;
+    menu.hidden = true;
+    menu.setAttribute('role', 'group');
+    menu.setAttribute('aria-label', 'اقتراحات من العروض الصادرة');
+    input.setAttribute('aria-controls', menu.id);
+    container.appendChild(menu);
+    let query = '';
+
+    function close() {
+      menu.hidden = true;
+      menu.replaceChildren();
+      if (activeSuggestion === controls) activeSuggestion = null;
+    }
+
+    function refresh() {
+      if (!signedInUser || input.disabled || issuedQuoteId) {
+        close();
+        return;
+      }
+      const candidates = field === 'service.name' ? serviceSuggestions
+        : Array.from(fieldHistory.get(field)?.values() || []);
+      const matching = candidates.filter(item =>
+        historyKey(item.name).includes(query) && (input.maxLength < 0 || item.name.length <= input.maxLength)
+      ).slice(0, 12);
+      menu.replaceChildren();
+      for (const suggestion of matching) {
+        const item = makeElement('div', 'service-suggestion');
+        const choice = makeElement('button', 'service-suggestion__choice', suggestion.name);
+        choice.type = 'button';
+        choice.dir = 'auto';
+        choice.addEventListener('click', () => {
+          input.value = suggestion.name;
+          input.focus();
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          close();
+        });
+        item.appendChild(choice);
+        if (field === 'service.name') {
+          const remove = makeElement('button', 'service-suggestion__remove', '×');
+          remove.type = 'button';
+          remove.setAttribute('aria-label', `حذف اقتراح ${suggestion.name}`);
+          remove.addEventListener('click', async () => {
+            const userId = signedInUser?.id;
+            remove.disabled = true;
+            const { data, error } = await supabase.from('quotation_service_suggestions')
+              .delete().eq('id', suggestion.id).select('id');
+            if (signedInUser?.id !== userId) return;
+            if (error || !data?.length) {
+              remove.disabled = false;
+              suggestionsStatus.textContent = 'تعذّر حذف الاقتراح. حاول مرة أخرى.';
+              return;
+            }
+            serviceSuggestions = serviceSuggestions.filter(item => item.id !== suggestion.id);
+            suggestionsStatus.textContent = `حُذف اقتراح ${suggestion.name}`;
+            if (activeSuggestion === controls) {
+              input.focus();
+              refresh();
+            }
+          });
+          item.appendChild(remove);
+        }
+        menu.appendChild(item);
+      }
+      menu.hidden = matching.length === 0;
+    }
+
+    const controls = { close, refresh };
+    function open(value = '') {
+      if (activeSuggestion && activeSuggestion !== controls) activeSuggestion.close();
+      activeSuggestion = controls;
+      query = historyKey(value);
+      refresh();
+    }
+    input.addEventListener('focus', () => open());
+    input.addEventListener('click', () => open());
+    input.addEventListener('input', () => open(input.value));
+    container.addEventListener('focusout', event => {
+      if (!container.contains(event.relatedTarget)) close();
+    });
+    container.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !menu.hidden) {
+        event.preventDefault();
+        input.focus();
+        close();
+      } else if (event.target === input && event.key === 'ArrowDown' && !menu.hidden) {
+        event.preventDefault();
+        menu.querySelector('button')?.focus();
+      }
+    });
+  }
+
+  function wrapHistory(label, input, field) {
+    const container = makeElement('div', 'history-field');
+    label.before(container);
+    container.appendChild(label);
+    attachSuggestions(container, input, field);
+    return container;
   }
 
   function makeServiceNameField(service) {
@@ -288,16 +417,8 @@
     input.maxLength = 150;
     input.autocomplete = 'off';
     input.placeholder = 'مثال: تصوير وتغطية حدث';
-    const menu = makeElement('div', 'service-suggestions');
-    menu.setAttribute('role', 'group');
-    menu.setAttribute('aria-label', 'اقتراحات وصف الخدمة');
-    menu.hidden = true;
-    input.addEventListener('focus', () => renderSuggestionChoices(service, input, menu));
-    input.addEventListener('input', () => renderSuggestionChoices(service, input, menu));
-    field.addEventListener('focusout', event => {
-      if (!field.contains(event.relatedTarget)) menu.hidden = true;
-    });
-    field.append(label, input, menu);
+    field.append(label, input);
+    attachSuggestions(field, input, 'service.name');
     return field;
   }
 
@@ -325,12 +446,7 @@
     }
     serviceSuggestions = loaded;
     suggestionsStatus.textContent = '';
-    const focused = rows.querySelector('.service-name-input:focus');
-    if (focused) renderSuggestionChoices(
-      services.find(service => `service-name-${service.id}` === focused.id),
-      focused,
-      focused.parentElement.querySelector('.service-suggestions')
-    );
+    activeSuggestion?.refresh();
   }
 
   function numberTermRows() {
@@ -358,7 +474,7 @@
       renderPreview();
       saveDraft();
     });
-    row.append(label, remove);
+    row.append(wrapHistory(label, field, 'term'), remove);
     termRows.appendChild(row);
     return field;
   }
@@ -423,6 +539,7 @@
   }
 
   function loadDraft(data) {
+    activeSuggestion?.close();
     for (const id of fieldIds) document.getElementById(id).value = data[id] || '';
     approvalToggle.checked = data.showApproval === true;
     termRows.replaceChildren();
@@ -437,6 +554,7 @@
 
   function applyIssuedState() {
     const issued = Boolean(issuedQuoteId);
+    if (issued) activeSuggestion?.close();
     for (const element of form.querySelectorAll('input:not(#quoteNumber), textarea')) element.disabled = issued;
     for (const button of rows.querySelectorAll('button')) button.disabled = issued;
     for (const button of termRows.querySelectorAll('button')) button.disabled = issued;
@@ -447,6 +565,19 @@
     if (issued) status.textContent = `اعتمد العرض ${document.getElementById('quoteNumber').value}`;
   }
 
+  function setSignedInUser(user) {
+    if (signedInUser?.id !== user?.id) {
+      ++historyLoadVersion;
+      fieldHistory = new Map();
+      serviceSuggestions = [];
+      activeSuggestion?.close();
+      historyStatus.textContent = '';
+      suggestionsStatus.textContent = '';
+    }
+    signedInUser = user;
+    authToggle.textContent = user ? 'تسجيل الخروج' : 'تسجيل الدخول';
+  }
+
   async function refreshAuth() {
     if (!supabase) {
       authToggle.textContent = 'تعذّر تحميل تسجيل الدخول';
@@ -454,9 +585,8 @@
       return;
     }
     const { data, error } = await supabase.auth.getUser();
-    signedInUser = error ? null : data.user;
-    authToggle.textContent = signedInUser ? 'تسجيل الخروج' : 'تسجيل الدخول';
-    await loadServiceSuggestions();
+    setSignedInUser(error ? null : data.user);
+    await Promise.all([loadServiceSuggestions(), loadFieldHistory()]);
   }
 
   async function startGoogleSignIn() {
@@ -574,7 +704,7 @@
       return;
     }
     const { data: authData, error: authError } = await supabase.auth.getUser();
-    signedInUser = authError ? null : authData.user;
+    setSignedInUser(authError ? null : authData.user);
     if (!signedInUser) {
       status.textContent = 'سجّل الدخول عبر Google، ثم اضغط إصدار مرة أخرى.';
       await startGoogleSignIn();
@@ -602,6 +732,7 @@
     persistDraft();
     status.textContent = `اعتمد العرض ${data[0].quotation_number}`;
     loadServiceSuggestions();
+    loadFieldHistory();
     printIssuedQuote();
   });
   document.getElementById('newQuote').addEventListener('click', () => {
@@ -612,6 +743,17 @@
     document.getElementById('clientName').focus();
   });
 
+  for (const field of reusableFields) {
+    const input = document.getElementById(field);
+    wrapHistory(input.closest('.field'), input, field);
+  }
+  supabase?.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') setSignedInUser(null);
+    if (event === 'SIGNED_IN' && signedInUser?.id && signedInUser.id !== session?.user?.id) {
+      setSignedInUser(null);
+      setTimeout(refreshAuth, 0);
+    }
+  });
   loadDraft(getDraft());
   refreshAuth();
 })();
