@@ -2,9 +2,12 @@
   'use strict';
 
   const STORAGE_KEY = 'bannay-quotation-draft-v1';
-  const fieldIds = ['quoteNumber', 'issueDate', 'quoteTitle', 'projectName', 'clientName', 'contactName', 'scopeNotes', 'terms', 'taxNote', 'coordinator', 'phone'];
+  const fieldIds = ['quoteNumber', 'issueDate', 'quoteTitle', 'projectName', 'clientName', 'contactName', 'scopeNotes', 'taxNote', 'coordinator', 'phone', 'approvalRepresentative', 'approvalDate'];
   const form = document.getElementById('quoteForm');
   const rows = document.getElementById('serviceRows');
+  const termRows = document.getElementById('termRows');
+  const addTerm = document.getElementById('addTerm');
+  const approvalToggle = document.getElementById('showApproval');
   const status = document.getElementById('saveStatus');
   const suggestionsStatus = document.getElementById('suggestionsStatus');
   const authToggle = document.getElementById('authToggle');
@@ -29,8 +32,9 @@
     const now = new Date();
     return {
       quoteNumber: '', issueDate: localDate(now), requestId: crypto.randomUUID(), issuedQuoteId: '',
-      quoteTitle: '', projectName: '', clientName: '', contactName: '', scopeNotes: '', terms: '',
-      taxNote: 'المؤسسة غير مسجلة حاليًا في ضريبة القيمة المضافة؛ لذا لا تُضاف ضريبة القيمة المضافة إلى قيمة هذا العرض.',
+      quoteTitle: '', projectName: '', clientName: '', contactName: '', scopeNotes: '', terms: '', termItems: [],
+      taxNote: 'المؤسسة غير مسجلة حاليًا في ضريبة القيمة المضافة، لذلك لا تُضاف الضريبة إلى هذا العرض.',
+      showApproval: false, approvalRepresentative: '', approvalDate: '',
       coordinator: 'أنس عمر', phone: '0599599527',
       services: [{ id: crypto.randomUUID(), name: '', performer: '', duration: '', quantity: 1, price: '' }]
     };
@@ -44,6 +48,10 @@
       if (!saved || typeof saved !== 'object') return makeDefaults();
       const draft = { ...makeDefaults(), ...saved };
       if (!draft.issuedQuoteId) draft.quoteNumber = '';
+      draft.termItems = Array.isArray(saved.termItems)
+        ? saved.termItems.filter(item => typeof item === 'string')
+        : String(saved.terms || '').split(/\r?\n/).filter(item => item.trim());
+      draft.taxNote = String(draft.taxNote ?? '').replaceAll('نظام ضريبة القيمة المضافة', 'ضريبة القيمة المضافة');
       draft.services = Array.isArray(saved.services) && saved.services.length
         ? saved.services.map(item => ({ id: item.id || crypto.randomUUID(), name: String(item.name || ''), performer: String(item.performer || ''), duration: String(item.duration || ''), quantity: item.quantity === '' ? '' : Number(item.quantity) || 1, price: item.price === 0 ? '0' : String(item.price || '') }))
         : makeDefaults().services;
@@ -56,7 +64,12 @@
   function readDraft() {
     const draft = {};
     for (const id of fieldIds) draft[id] = document.getElementById(id).value.trim();
-    draft.services = services.map(({ id, name, performer, duration, quantity, price }) => ({ id, name, performer, duration, quantity, price }));
+    draft.termItems = Array.from(termRows.querySelectorAll('textarea'), input => input.value.trim()).filter(Boolean);
+    draft.terms = draft.termItems.join('\n');
+    draft.showApproval = approvalToggle.checked;
+    draft.services = services.map(({ id, name, performer, duration, quantity, price }) => ({
+      id, name: name.trim(), performer: performer.trim(), duration: duration.trim(), quantity, price
+    }));
     draft.requestId = requestId;
     draft.issuedQuoteId = issuedQuoteId;
     return draft;
@@ -76,18 +89,22 @@
     saveTimer = setTimeout(persistDraft, 250);
   }
 
-  function setText(id, value, fallback = '—') {
-    document.getElementById(id).textContent = value || fallback;
+  function setText(id, value) {
+    document.getElementById(id).textContent = value;
+  }
+
+  function showIf(id, value) {
+    document.getElementById(id).hidden = !value;
   }
 
   function displayDate(value) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '—';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
     const [year, month, day] = value.split('-');
     return `${day}/${month}/${year}`;
   }
 
   function formatAmount(value) {
-    return `${money.format(Number(value) || 0)} ريال`;
+    return `${money.format(Number(value) || 0)} ريال سعودي`;
   }
 
   function makeElement(tag, className, text) {
@@ -97,56 +114,114 @@
     return element;
   }
 
-  function renderPreview() {
-    const data = readDraft();
-    const issued = Boolean(issuedQuoteId);
-    setText('viewNumber', data.quoteNumber, 'مسودة');
-    setText('viewIssueDate', displayDate(data.issueDate));
-    setText('viewClient', data.clientName, issued ? '' : 'اسم العميل');
-    setText('viewTitle', data.quoteTitle, issued ? '' : 'عنوان العرض');
-    document.getElementById('viewClientSection').hidden = issued && !data.clientName && !data.contactName && !data.quoteTitle && !data.projectName;
-    document.getElementById('viewClientLabel').hidden = issued && !data.clientName;
-    document.getElementById('viewClient').hidden = issued && !data.clientName;
-    document.getElementById('viewProjectBlock').hidden = issued && !data.quoteTitle && !data.projectName;
-    setText('viewCoordinator', data.coordinator, '');
-    setText('viewPhone', data.phone, '');
-    const contact = document.getElementById('viewContact');
-    contact.hidden = !data.contactName;
-    contact.textContent = data.contactName ? `عناية: ${data.contactName}` : '';
-    const project = document.getElementById('viewProject');
-    project.hidden = !data.projectName;
-    project.textContent = data.projectName || '';
+  function hasLineTotal(service) {
+    return service.quantity !== '' && service.price !== '';
+  }
 
+  function appendAmount(target, value) {
+    const number = makeElement('bdi', 'paper-amount__number', money.format(Number(value) || 0));
+    number.dir = 'ltr';
+    target.append(number, ' ريال سعودي');
+  }
+
+  function renderServices(data) {
+    const visibleServices = data.services.filter(service =>
+      service.name || service.performer || service.duration || service.price !== '' ||
+      (service.quantity !== '' && Number(service.quantity) !== 1)
+    );
+    const columns = [
+      { key: 'name', label: 'الخدمة', visible: visibleServices.some(service => service.name || service.performer) },
+      { key: 'duration', label: 'المدة', visible: visibleServices.some(service => service.duration) },
+      { key: 'quantity', label: 'العدد', visible: visibleServices.some(service => service.quantity !== '') },
+      { key: 'price', label: 'سعر الوحدة', visible: visibleServices.some(service => service.price !== '') },
+      { key: 'total', label: 'القيمة', visible: visibleServices.some(hasLineTotal) }
+    ].filter(column => column.visible);
+    const head = document.getElementById('viewServiceHead');
     const body = document.getElementById('viewServices');
+    head.replaceChildren();
     body.replaceChildren();
+    for (const column of columns) {
+      const header = makeElement('th', '', column.label);
+      header.scope = 'col';
+      header.dataset.column = column.key;
+      head.appendChild(header);
+    }
+
     let total = 0;
-    const visibleServices = issued
-      ? services.filter(service => service.name || service.performer || service.duration || service.price !== '')
-      : services;
     for (const service of visibleServices) {
       const lineTotal = (Number(service.quantity) || 0) * (Number(service.price) || 0);
       total += lineTotal;
-      const row = document.createElement('tr');
-      const nameCell = document.createElement('td');
-      nameCell.appendChild(makeElement('span', 'paper-service-name', service.name || (issued ? '' : 'اسم الخدمة')));
-      if (service.performer) nameCell.appendChild(makeElement('span', 'paper-service-detail', `المنفذ: ${service.performer}`));
-      row.appendChild(nameCell);
-      row.appendChild(makeElement('td', '', service.duration || (issued ? '' : '—')));
-      row.appendChild(makeElement('td', '', service.quantity === '' ? (issued ? '' : '—') : String(service.quantity || 1)));
-      row.appendChild(makeElement('td', '', formatAmount(lineTotal)));
+      const row = makeElement('tr');
+      for (const { key } of columns) {
+        const cell = makeElement('td');
+        cell.dataset.column = key;
+        if (key === 'name') {
+          if (service.name) cell.appendChild(makeElement('span', 'paper-service-name', service.name));
+          if (service.performer) cell.appendChild(makeElement('span', 'paper-service-detail', `المنفذ: ${service.performer}`));
+        } else if (key === 'price' || key === 'total') {
+          if (key === 'price' && service.price !== '') appendAmount(cell, service.price);
+          if (key === 'total' && hasLineTotal(service)) appendAmount(cell, lineTotal);
+        } else {
+          cell.textContent = service[key];
+        }
+        row.appendChild(cell);
+      }
       body.appendChild(row);
     }
-    setText('viewTotal', formatAmount(total));
-    const taxNote = document.getElementById('viewTaxNote');
-    taxNote.hidden = !data.taxNote;
-    taxNote.textContent = data.taxNote;
-    for (const [sectionId, targetId, value] of [
-      ['viewNotesSection', 'viewNotes', data.scopeNotes],
-      ['viewTermsSection', 'viewTerms', data.terms]
-    ]) {
-      document.getElementById(sectionId).hidden = !value;
-      document.getElementById(targetId).textContent = value;
-    }
+    const hasTotal = columns.some(column => column.key === 'total');
+    showIf('viewServicesTable', columns.length);
+    showIf('paperServicesTitle', columns.length);
+    showIf('viewTotalBlock', hasTotal);
+    showIf('viewServicesSection', columns.length || data.taxNote);
+    showIf('viewTaxNote', data.taxNote);
+    setText('viewTaxNote', data.taxNote);
+    const totalValue = document.getElementById('viewTotal');
+    totalValue.replaceChildren();
+    if (hasTotal) appendAmount(totalValue, total);
+  }
+
+  function renderPreview() {
+    const data = readDraft();
+    const issueDate = displayDate(data.issueDate);
+    showIf('viewNumberBlock', data.quoteNumber);
+    showIf('viewDraftStatus', !issuedQuoteId);
+    showIf('viewIssueDateBlock', issueDate);
+    showIf('viewMeta', data.quoteNumber || issueDate || !issuedQuoteId);
+    setText('viewNumber', data.quoteNumber);
+    setText('viewIssueDate', issueDate);
+
+    showIf('viewClientSection', data.clientName || data.contactName || data.quoteTitle || data.projectName);
+    showIf('viewClientLabel', data.clientName);
+    showIf('viewClient', data.clientName);
+    showIf('viewContact', data.contactName);
+    showIf('viewTitleBlock', data.quoteTitle);
+    showIf('viewProjectBlock', data.projectName);
+    setText('viewClient', data.clientName);
+    setText('viewContact', data.contactName ? `عناية: ${data.contactName}` : '');
+    setText('viewTitle', data.quoteTitle);
+    setText('viewProject', data.projectName);
+
+    renderServices(data);
+    showIf('viewNotesSection', data.scopeNotes);
+    setText('viewNotes', data.scopeNotes);
+    showIf('viewTermsSection', data.termItems.length);
+    document.getElementById('viewTerms').replaceChildren(...data.termItems.map(item => {
+      const text = makeElement('span', '', item);
+      text.dir = 'auto';
+      const line = makeElement('li');
+      line.appendChild(text);
+      return line;
+    }));
+
+    showIf('approvalFields', data.showApproval);
+    showIf('viewApproval', data.showApproval);
+    setText('viewApprovalRepresentative', data.approvalRepresentative);
+    setText('viewApprovalDate', displayDate(data.approvalDate));
+    setText('viewCoordinator', data.coordinator);
+    setText('viewPhone', data.phone);
+    showIf('viewCoordinator', data.coordinator);
+    showIf('viewPhone', data.phone);
+    showIf('viewFooter', data.coordinator || data.phone);
   }
 
   function makeField(labelText, key, value, options = {}) {
@@ -263,6 +338,36 @@
     );
   }
 
+  function numberTermRows() {
+    Array.from(termRows.children).forEach((row, index) => {
+      row.querySelector('label span').textContent = `البند ${index + 1}`;
+      row.querySelector('button').setAttribute('aria-label', `حذف البند ${index + 1}`);
+    });
+  }
+
+  function appendTermRow(value = '') {
+    const row = makeElement('div', 'term-row');
+    const label = makeElement('label', 'field');
+    const field = document.createElement('textarea');
+    field.rows = 2;
+    field.value = value;
+    field.placeholder = 'اكتب شرطًا واحدًا';
+    label.append(makeElement('span'), field);
+    const remove = makeElement('button', 'icon-button', 'حذف');
+    remove.type = 'button';
+    remove.addEventListener('click', () => {
+      const adjacent = row.nextElementSibling || row.previousElementSibling;
+      row.remove();
+      numberTermRows();
+      (adjacent?.querySelector('textarea') || addTerm).focus();
+      renderPreview();
+      saveDraft();
+    });
+    row.append(label, remove);
+    termRows.appendChild(row);
+    return field;
+  }
+
   function renderRows() {
     rows.replaceChildren();
     services.forEach((service, index) => {
@@ -289,14 +394,19 @@
       const extra = makeElement('div', 'service-row__extra');
       extra.appendChild(makeField('اسم المنفذ أو المودل (اختياري)', 'performer', service.performer));
       card.appendChild(extra);
-      const subtotal = makeElement('div', 'service-row__subtotal', formatAmount((Number(service.quantity) || 0) * (Number(service.price) || 0)));
+      const subtotal = makeElement('div', 'service-row__subtotal');
+      const updateSubtotal = () => {
+        subtotal.hidden = !hasLineTotal(service);
+        subtotal.textContent = subtotal.hidden ? '' : formatAmount(Number(service.quantity) * Number(service.price));
+      };
+      updateSubtotal();
       card.appendChild(subtotal);
       card.addEventListener('input', event => {
         const input = event.target;
         if (!(input instanceof HTMLInputElement) || !input.dataset.key) return;
         service[input.dataset.key] = input.value;
         input.removeAttribute('aria-invalid');
-        subtotal.textContent = formatAmount((Number(service.quantity) || 0) * (Number(service.price) || 0));
+        updateSubtotal();
         renderPreview(); saveDraft();
       });
       rows.appendChild(card);
@@ -318,6 +428,10 @@
 
   function loadDraft(data) {
     for (const id of fieldIds) document.getElementById(id).value = data[id] || '';
+    approvalToggle.checked = data.showApproval === true;
+    termRows.replaceChildren();
+    for (const item of data.termItems.length ? data.termItems : ['']) appendTermRow(item);
+    numberTermRows();
     requestId = data.requestId || crypto.randomUUID();
     issuedQuoteId = data.issuedQuoteId || '';
     services = data.services;
@@ -329,6 +443,8 @@
     const issued = Boolean(issuedQuoteId);
     for (const element of form.querySelectorAll('input:not(#quoteNumber), textarea')) element.disabled = issued;
     for (const button of rows.querySelectorAll('button')) button.disabled = issued;
+    for (const button of termRows.querySelectorAll('button')) button.disabled = issued;
+    addTerm.disabled = issued;
     for (const menu of rows.querySelectorAll('.service-suggestions')) menu.hidden = true;
     document.getElementById('addService').disabled = issued;
     printButton.textContent = issued ? 'إعادة تصدير PDF' : 'إصدار وتصدير PDF';
@@ -383,6 +499,11 @@
       event.target.removeAttribute('aria-invalid');
     }
     renderPreview(); saveDraft();
+  });
+  addTerm.addEventListener('click', () => {
+    const field = appendTermRow();
+    numberTermRows();
+    field.focus();
   });
   document.getElementById('addService').addEventListener('click', () => {
     services.push({ id: crypto.randomUUID(), name: '', performer: '', duration: '', quantity: 1, price: '' });

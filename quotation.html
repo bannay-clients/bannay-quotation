@@ -7,9 +7,9 @@
     <meta name="referrer" content="no-referrer" />
     <title>منشئ عروض الأسعار | Bannay Solutions Establishment</title>
     <link rel="icon" type="image/png" href="assets/brand/bannay-favicon.png" />
-    <link rel="stylesheet" href="quotation.css" />
+    <link rel="stylesheet" href="quotation.css?v=details-1" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js" defer></script>
-    <script src="quotation.js" defer></script>
+    <script src="quotation.js?v=details-1" defer></script>
   </head>
   <body>
     <header class="app-header">
@@ -68,9 +68,19 @@
 
           <section class="form-section" aria-labelledby="termsTitle">
             <div class="section-heading"><span>04</span><h2 id="termsTitle">التفاصيل والشروط</h2></div>
-            <div class="field-grid field-grid--two">
-              <label class="field"><span>ملاحظات نطاق العمل</span><textarea id="scopeNotes" name="scopeNotes" rows="3" maxlength="800" placeholder="مثال: يشمل التصوير وتسليم الصور النهائية"></textarea></label>
-              <label class="field"><span>شروط العرض</span><textarea id="terms" name="terms" rows="3" maxlength="800" placeholder="مثال: يبدأ التنفيذ بعد اعتماد العرض"></textarea></label>
+            <label class="field"><span>ملاحظات نطاق العمل</span><textarea id="scopeNotes" name="scopeNotes" rows="3" maxlength="800" placeholder="مثال: يشمل التصوير وتسليم الصور النهائية"></textarea></label>
+            <fieldset class="terms-editor">
+              <legend>شروط العرض</legend>
+              <div id="termRows" class="term-rows"></div>
+              <button id="addTerm" class="button button--outline" type="button">+ إضافة بند</button>
+            </fieldset>
+            <label class="approval-toggle">
+              <input id="showApproval" name="showApproval" type="checkbox" aria-controls="approvalFields" />
+              <span>إظهار مساحة اعتماد العميل</span>
+            </label>
+            <div id="approvalFields" class="field-grid field-grid--two" hidden>
+              <label class="field"><span>اسم ممثل العميل</span><input id="approvalRepresentative" name="approvalRepresentative" maxlength="150" placeholder="اختياري" /></label>
+              <label class="field"><span>تاريخ الاعتماد</span><input id="approvalDate" name="approvalDate" type="date" /></label>
             </div>
             <label class="field field--tax"><span>ملاحظة ضريبة القيمة المضافة</span><textarea id="taxNote" name="taxNote" rows="2" maxlength="300"></textarea><small>تظهر أسفل الإجمالي. راجعها إذا تغيّرت حالة تسجيل المؤسسة الضريبي.</small></label>
             <div class="field-grid field-grid--two">
@@ -99,30 +109,32 @@
               </div>
             </header>
 
-            <div class="paper-meta">
-              <div><span>رقم العرض</span><strong id="viewNumber" dir="ltr"></strong></div>
-              <div><span>تاريخ الإصدار</span><strong id="viewIssueDate" dir="ltr"></strong></div>
+            <div id="viewMeta" class="paper-meta">
+              <div id="viewNumberBlock"><span>رقم العرض</span><strong id="viewNumber" dir="ltr"></strong></div>
+              <div id="viewIssueDateBlock"><span>تاريخ الإصدار</span><strong id="viewIssueDate" dir="ltr"></strong></div>
+              <span id="viewDraftStatus">مسودة</span>
             </div>
 
             <section id="viewClientSection" class="paper-client">
               <span id="viewClientLabel" class="paper-label">موجّه إلى</span>
               <h3 id="viewClient"></h3>
               <p id="viewContact" hidden></p>
-              <div id="viewProjectBlock" class="paper-project"><span class="paper-label">الموضوع</span><strong id="viewTitle"></strong><span id="viewProject" hidden></span></div>
+              <div id="viewTitleBlock" class="paper-project"><span class="paper-label">الموضوع</span><strong id="viewTitle" dir="auto"></strong></div>
+              <div id="viewProjectBlock" class="paper-project"><span class="paper-label">المشروع</span><strong id="viewProject" dir="auto"></strong></div>
             </section>
 
             <section id="viewServicesSection" class="paper-services" aria-labelledby="paperServicesTitle">
               <h3 id="paperServicesTitle">تفاصيل الخدمة</h3>
-              <table>
-                <thead><tr><th scope="col">الخدمة</th><th scope="col">المدة</th><th scope="col">العدد</th><th scope="col">القيمة</th></tr></thead>
+              <table id="viewServicesTable">
+                <thead><tr id="viewServiceHead"></tr></thead>
                 <tbody id="viewServices"></tbody>
               </table>
-              <div class="paper-total"><span>الإجمالي</span><strong id="viewTotal"></strong></div>
+              <div id="viewTotalBlock" class="paper-total"><span>الإجمالي</span><strong id="viewTotal"></strong></div>
               <p id="viewTaxNote" class="paper-tax-note"></p>
             </section>
 
             <section id="viewNotesSection" class="paper-notes" hidden><h3>نطاق العمل</h3><p id="viewNotes"></p></section>
-            <section id="viewTermsSection" class="paper-notes" hidden><h3>الشروط</h3><p id="viewTerms"></p></section>
+            <section id="viewTermsSection" class="paper-notes" hidden><h3>شروط العرض</h3><ol id="viewTerms" class="paper-terms"></ol></section>
 
             <section class="paper-payment" aria-labelledby="paymentTitle">
               <h3 id="paymentTitle">بيانات التحويل</h3>
@@ -139,7 +151,15 @@
               </div>
             </section>
 
-            <footer class="paper-footer"><span id="viewCoordinator"></span><span id="viewPhone" dir="ltr"></span></footer>
+            <section id="viewApproval" class="paper-approval" aria-labelledby="viewApprovalTitle" hidden>
+              <h3 id="viewApprovalTitle">اعتماد العميل</h3>
+              <div class="paper-approval__fields">
+                <p><span>اسم ممثل العميل</span><bdi id="viewApprovalRepresentative" dir="auto"></bdi></p>
+                <p><span>تاريخ الاعتماد</span><bdi id="viewApprovalDate" dir="ltr"></bdi></p>
+              </div>
+              <p>تُقبل أيضًا الموافقة الخطية التي تشير إلى رقم العرض.</p>
+            </section>
+            <footer id="viewFooter" class="paper-footer"><span id="viewCoordinator"></span><span id="viewPhone" dir="ltr"></span></footer>
           </div>
         </article>
       </aside>
