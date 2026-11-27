@@ -103,10 +103,6 @@
     return `${day}/${month}/${year}`;
   }
 
-  function formatAmount(value) {
-    return `${money.format(Number(value) || 0)} ريال سعودي`;
-  }
-
   function makeElement(tag, className, text) {
     const element = document.createElement(tag);
     if (className) element.className = className;
@@ -118,10 +114,10 @@
     return service.quantity !== '' && service.price !== '';
   }
 
-  function appendAmount(target, value) {
+  function amountNumber(value) {
     const number = makeElement('bdi', 'paper-amount__number', money.format(Number(value) || 0));
     number.dir = 'ltr';
-    target.append(number, ' ريال سعودي');
+    return number;
   }
 
   function renderServices(data) {
@@ -133,8 +129,7 @@
       { key: 'name', label: 'الخدمة', visible: visibleServices.some(service => service.name || service.performer) },
       { key: 'duration', label: 'المدة', visible: visibleServices.some(service => service.duration) },
       { key: 'quantity', label: 'العدد', visible: visibleServices.some(service => service.quantity !== '') },
-      { key: 'price', label: 'سعر الوحدة', visible: visibleServices.some(service => service.price !== '') },
-      { key: 'total', label: 'القيمة', visible: visibleServices.some(hasLineTotal) }
+      { key: 'price', label: 'سعر الوحدة (ر.س)', visible: visibleServices.some(service => service.price !== '') }
     ].filter(column => column.visible);
     const head = document.getElementById('viewServiceHead');
     const body = document.getElementById('viewServices');
@@ -158,9 +153,8 @@
         if (key === 'name') {
           if (service.name) cell.appendChild(makeElement('span', 'paper-service-name', service.name));
           if (service.performer) cell.appendChild(makeElement('span', 'paper-service-detail', `المنفذ: ${service.performer}`));
-        } else if (key === 'price' || key === 'total') {
-          if (key === 'price' && service.price !== '') appendAmount(cell, service.price);
-          if (key === 'total' && hasLineTotal(service)) appendAmount(cell, lineTotal);
+        } else if (key === 'price') {
+          if (service.price !== '') cell.appendChild(amountNumber(service.price));
         } else {
           cell.textContent = service[key];
         }
@@ -168,7 +162,7 @@
       }
       body.appendChild(row);
     }
-    const hasTotal = columns.some(column => column.key === 'total');
+    const hasTotal = visibleServices.some(hasLineTotal);
     showIf('viewServicesTable', columns.length);
     showIf('paperServicesTitle', columns.length);
     showIf('viewTotalBlock', hasTotal);
@@ -177,7 +171,7 @@
     setText('viewTaxNote', data.taxNote);
     const totalValue = document.getElementById('viewTotal');
     totalValue.replaceChildren();
-    if (hasTotal) appendAmount(totalValue, total);
+    if (hasTotal) totalValue.append(amountNumber(total), ' ريال سعودي');
   }
 
   function renderPreview() {
@@ -397,7 +391,8 @@
       const subtotal = makeElement('div', 'service-row__subtotal');
       const updateSubtotal = () => {
         subtotal.hidden = !hasLineTotal(service);
-        subtotal.textContent = subtotal.hidden ? '' : formatAmount(Number(service.quantity) * Number(service.price));
+        subtotal.replaceChildren();
+        if (!subtotal.hidden) subtotal.append(amountNumber(Number(service.quantity) * Number(service.price)), ' ريال');
       };
       updateSubtotal();
       card.appendChild(subtotal);

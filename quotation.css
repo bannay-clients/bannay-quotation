@@ -116,9 +116,9 @@ input[type="date"]{direction:ltr;text-align:right}
 .paper-services th{padding:10px 11px;background:var(--teal-soft);text-align:right;color:var(--teal-dark)}
 .paper-services th:not(:only-child)[data-column="duration"]{width:16%}
 .paper-services th:not(:only-child)[data-column="quantity"]{width:12%}
-.paper-services th:not(:only-child)[data-column="price"],.paper-services th:not(:only-child)[data-column="total"]{width:22%}
+.paper-services th:not(:only-child)[data-column="price"]{width:28%}
 .paper-services td{padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.6;overflow-wrap:anywhere}
-.paper-services [data-column="total"]{text-align:end}
+.paper-services [data-column="price"]{text-align:end}
 .paper-amount__number{font-variant-numeric:tabular-nums}
 .paper-service-name{font-weight:700}
 .paper-service-detail{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:4px}
@@ -143,11 +143,11 @@ input[type="date"]{direction:ltr;text-align:right}
 .paper-payment dd{margin:0;font-weight:700;overflow-wrap:anywhere}
 .paper-approval{margin-top:13px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;font-size:11px;line-height:1.65}
 .paper-approval h3{margin:0 0 4px;font-size:14px}
-.paper-approval__fields{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8px}
+.paper-approval__fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 16px}
 .paper-approval__fields p{display:flex;flex-wrap:wrap;gap:3px 6px;align-items:baseline}
 .paper-approval p{margin:0;overflow-wrap:anywhere}
 .paper-approval__fields bdi:empty{flex:1;min-width:3em;min-height:1em;border-bottom:1px solid #9b8891}
-.paper-approval>p{margin-top:5px;color:var(--muted)}
+.paper-approval__fields .paper-approval__signature{grid-column:2;grid-row:1/span 2;align-items:start;min-block-size:60px;padding:4px 8px;border:1px solid #b5a3ac;border-radius:5px}
 .paper-footer{display:flex;justify-content:space-between;gap:12px;margin-top:15px;padding-top:8px;border-top:1px solid var(--teal);color:var(--muted);font-size:11px}
 [hidden]{display:none!important}
 @media(max-width:1100px){.workspace{grid-template-columns:minmax(0,1fr)}.preview-panel{position:static;max-width:760px;width:100%;margin:auto}.editor{max-width:760px;width:100%;margin:auto}}
